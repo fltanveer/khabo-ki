@@ -58,6 +58,18 @@
     ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Bengali ascenders and the matra sit outside the Latin line box, so tight
+   leading clips them. Small text is the worst affected — badges, tab labels,
+   captions — so give the whole document more room when Bangla is active. */
+:root[lang="bn"] body {
+  line-height: 1.75;
+}
+
+:root[lang="bn"] .text-xs,
+:root[lang="bn"] .text-\[11px\] {
+  line-height: 1.8;
+}
+
 :root[data-theme="dark"] {
   --bg: oklch(0.175 0.006 260);
   --surface: oklch(0.212 0.007 260);
