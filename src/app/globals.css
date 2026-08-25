@@ -1,23 +1,124 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bg: oklch(0.98 0.008 95);
-  --color-surface: oklch(1 0 0);
-  --color-line: oklch(0.9 0.01 95);
-  --color-ink: oklch(0.24 0.02 60);
-  --color-muted: oklch(0.52 0.02 70);
-  --color-brand: oklch(0.58 0.16 45);
-  --color-brand-soft: oklch(0.95 0.04 60);
-  --color-good: oklch(0.55 0.13 155);
-  --color-warn: oklch(0.68 0.15 75);
-  --color-bad: oklch(0.55 0.19 25);
+/* Semantic tokens live on :root so they can be swapped per theme; Tailwind
+   maps its colour utilities onto them with @theme inline. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+
+  --font-sans: var(--font-app);
+  --radius-card: 1rem;
 }
 
-html, body {
-  background: var(--color-bg);
-  color: var(--color-ink);
+:root {
+  --bg: oklch(0.985 0.006 90);
+  --surface: oklch(1 0 0);
+  --raised: oklch(0.975 0.008 85);
+  --line: oklch(0.905 0.008 85);
+  --ink: oklch(0.22 0.02 60);
+  --muted: oklch(0.53 0.02 70);
+  --brand: oklch(0.58 0.16 42);
+  --on-brand: oklch(1 0 0);
+  --brand-soft: oklch(0.955 0.035 60);
+  --good: oklch(0.5 0.13 155);
+  --good-soft: oklch(0.95 0.05 155);
+  --warn: oklch(0.55 0.11 75);
+  --warn-soft: oklch(0.96 0.06 85);
+  --bad: oklch(0.53 0.19 25);
+  --bad-soft: oklch(0.96 0.04 25);
+
+  --font-app: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+
+/* Bangla needs a font stack that actually has the glyphs, or Chrome falls
+   back to something with broken conjuncts. */
+:root[lang="bn"] {
+  --font-app: var(--font-bengali), "Noto Sans Bengali", "Kalpurush", "SolaimanLipi",
+    ui-sans-serif, system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.19 0.012 65);
+  --surface: oklch(0.235 0.014 65);
+  --raised: oklch(0.275 0.016 65);
+  --line: oklch(0.33 0.016 65);
+  --ink: oklch(0.95 0.008 80);
+  --muted: oklch(0.7 0.015 75);
+  --brand: oklch(0.72 0.145 52);
+  --on-brand: oklch(0.19 0.02 60);
+  --brand-soft: oklch(0.32 0.05 50);
+  --good: oklch(0.75 0.14 158);
+  --good-soft: oklch(0.3 0.06 158);
+  --warn: oklch(0.82 0.13 80);
+  --warn-soft: oklch(0.32 0.055 80);
+  --bad: oklch(0.72 0.16 25);
+  --bad-soft: oklch(0.32 0.07 25);
+  color-scheme: dark;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--bg);
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-app);
+  /* Room for the mobile tab bar plus the home indicator. */
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
+/* Inputs should never zoom the viewport on iOS — that needs >=16px. */
+input,
+select,
+textarea,
+button {
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 0.875rem;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

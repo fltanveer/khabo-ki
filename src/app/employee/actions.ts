@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
-
-type Result = { error?: string };
+import type { ActionResult } from "@/lib/errors";
 
 // RLS is what actually enforces "before cutoff, on the menu, not banned" —
-// these actions just surface a readable message when it rejects.
-export async function pickItem(menuId: string, itemId: string): Promise<Result> {
+// these actions just report a code the UI can phrase in either language.
+export async function pickItem(menuId: string, itemId: string): Promise<ActionResult> {
   const profile = await requireRole("employee");
   const supabase = await createClient();
 
@@ -23,13 +22,13 @@ export async function pickItem(menuId: string, itemId: string): Promise<Result> 
     { onConflict: "employee_id,daily_menu_id" },
   );
 
-  if (error) return { error: "Couldn't save that pick — ordering may have closed." };
+  if (error) return { error: "pick_failed" };
 
   revalidatePath("/employee");
   return {};
 }
 
-export async function clearPick(menuId: string): Promise<Result> {
+export async function clearPick(menuId: string): Promise<ActionResult> {
   const profile = await requireRole("employee");
   const supabase = await createClient();
 
@@ -39,13 +38,13 @@ export async function clearPick(menuId: string): Promise<Result> {
     .eq("employee_id", profile.id)
     .eq("daily_menu_id", menuId);
 
-  if (error) return { error: "Couldn't clear that pick — ordering may have closed." };
+  if (error) return { error: "clear_failed" };
 
   revalidatePath("/employee");
   return {};
 }
 
-export async function toggleBan(itemId: string, banned: boolean): Promise<Result> {
+export async function toggleBan(itemId: string, banned: boolean): Promise<ActionResult> {
   const profile = await requireRole("employee");
   const supabase = await createClient();
 
@@ -57,14 +56,20 @@ export async function toggleBan(itemId: string, banned: boolean): Promise<Result
         .eq("employee_id", profile.id)
         .eq("item_id", itemId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
-  // A newly banned item may be sitting in today's order or preference list.
+  // A newly banned dish may be sitting in today's order or preference list.
   if (banned) {
-    await supabase.from("employee_pick_rules").delete()
-      .eq("employee_id", profile.id).eq("item_id", itemId);
-    await supabase.from("orders").delete()
-      .eq("employee_id", profile.id).eq("item_id", itemId)
+    await supabase
+      .from("employee_pick_rules")
+      .delete()
+      .eq("employee_id", profile.id)
+      .eq("item_id", itemId);
+    await supabase
+      .from("orders")
+      .delete()
+      .eq("employee_id", profile.id)
+      .eq("item_id", itemId)
       .gte("picked_at", new Date(Date.now() - 86_400_000).toISOString());
   }
 
@@ -73,12 +78,12 @@ export async function toggleBan(itemId: string, banned: boolean): Promise<Result
   return {};
 }
 
-export async function savePickRules(itemIds: string[]): Promise<Result> {
+export async function savePickRules(itemIds: string[]): Promise<ActionResult> {
   await requireRole("employee");
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("set_pick_rules", { p_item_ids: itemIds });
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
   revalidatePath("/employee/preferences");
   return {};

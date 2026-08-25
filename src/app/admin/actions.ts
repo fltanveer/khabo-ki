@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { isValidPhone, normalizePhone, phoneToEmail } from "@/lib/phone";
+import { isValidPhone } from "@/lib/phone";
+import { callUsersFunction } from "@/lib/users-api";
+import type { ActionResult } from "@/lib/errors";
 
-type Result = { error?: string; message?: string };
+type Result = ActionResult & { created?: boolean };
 
 export async function approveUser(userId: string): Promise<Result> {
   const admin = await requireRole("admin");
@@ -17,25 +18,26 @@ export async function approveUser(userId: string): Promise<Result> {
     .update({ status: "active", approved_by: admin.id, approved_at: new Date().toISOString() })
     .eq("id", userId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
   revalidatePath("/admin");
   return {};
 }
 
 export async function setUserStatus(userId: string, status: "active" | "inactive"): Promise<Result> {
   const admin = await requireRole("admin");
-  if (userId === admin.id) return { error: "You can't deactivate your own account." };
+  if (userId === admin.id) return { error: "self_deactivate" };
 
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ status }).eq("id", userId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
   revalidatePath("/admin");
   return {};
 }
 
-// Staff and admin accounts are created here, not self-registered — the
-// service-role client is the only way to mint an auth user server-side.
+// Staff and admin accounts are created here, not self-registered. The actual
+// mint happens in the `users` edge function, which re-checks that the caller
+// is an active admin against the session token we forward.
 export async function createUser(
   name: string,
   phone: string,
@@ -44,32 +46,21 @@ export async function createUser(
 ): Promise<Result> {
   await requireRole("admin");
 
-  if (name.trim().length < 2) return { error: "Enter a full name." };
-  if (!isValidPhone(phone)) return { error: "Enter a valid phone number." };
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (name.trim().length < 2) return { error: "invalid_name" };
+  if (!isValidPhone(phone)) return { error: "invalid_phone" };
+  if (password.length < 8) return { error: "short_password" };
 
-  let admin;
-  try {
-    admin = createAdminClient();
-  } catch {
-    return { error: "SUPABASE_SERVICE_ROLE_KEY is not configured on the server." };
-  }
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "session_expired" };
 
-  const { error } = await admin.auth.admin.createUser({
-    email: phoneToEmail(phone),
-    password,
-    email_confirm: true,
-    user_metadata: { name: name.trim(), phone: normalizePhone(phone), role },
-  });
-
-  if (error) {
-    return {
-      error: error.message.toLowerCase().includes("already")
-        ? "That phone number already has an account."
-        : error.message,
-    };
-  }
+  const { error } = await callUsersFunction(
+    { action: "create", name, phone, password, role },
+    token,
+  );
+  if (error) return { error: error.toLowerCase().includes("already") ? "taken" : "create_failed" };
 
   revalidatePath("/admin");
-  return { message: `${role === "admin" ? "Admin" : "Staff"} account created.` };
+  return { created: true };
 }

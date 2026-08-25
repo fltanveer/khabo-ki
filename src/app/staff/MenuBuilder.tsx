@@ -2,187 +2,254 @@
 
 import { useState, useTransition } from "react";
 import {
-  addExistingItem,
-  addNewItem,
+  addOneOffDish,
   lockMenu,
   publishMenu,
-  removeItem,
   setCutoff,
+  syncMenuItems,
 } from "./actions";
-import { Badge, Button, Card, Input, Notice, Select } from "@/components/ui";
+import { useI18n } from "@/components/I18nProvider";
+import { useErrorText } from "@/components/useErrorText";
+import { Badge, Button, Card, Input, Notice, Section } from "@/components/ui";
 
-type Item = { id: string; name: string };
+type Item = { id: string; name: string; name_bn: string | null };
+
+function Tick({ on }: { on: boolean }) {
+  return (
+    <span
+      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${
+        on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface"
+      }`}
+    >
+      {on && (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m5 13 4 4L19 7" />
+        </svg>
+      )}
+    </span>
+  );
+}
 
 export function MenuBuilder({
   menuId,
   menuDate,
   cutoffHHMM,
   published,
-  locked,
-  closed,
-  onMenu,
+  lockedEarly,
+  orderingClosed,
   library,
+  initialSelected,
 }: {
   menuId: string;
   menuDate: string;
   cutoffHHMM: string;
   published: boolean;
-  locked: boolean;
-  closed: boolean;
-  onMenu: Item[];
+  lockedEarly: boolean;
+  orderingClosed: boolean;
   library: Item[];
+  initialSelected: string[];
 }) {
+  const { t, f, n, dish } = useI18n();
+  const errorText = useErrorText();
+
+  const [selected, setSelected] = useState<string[]>(initialSelected);
+  const [savedSet, setSavedSet] = useState<string[]>(initialSelected);
+  const [newName, setNewName] = useState("");
+  const [cutoff, setCutoffValue] = useState(cutoffHHMM);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [newName, setNewName] = useState("");
-  const [pickId, setPickId] = useState("");
-  const [cutoff, setCutoffValue] = useState(cutoffHHMM);
   const [pending, startTransition] = useTransition();
 
-  const onMenuIds = new Set(onMenu.map((item) => item.id));
-  const available = library.filter((item) => !onMenuIds.has(item.id));
+  const dirty =
+    selected.length !== savedSet.length || selected.some((id) => !savedSet.includes(id));
 
-  function run(fn: () => Promise<{ error?: string; message?: string }>) {
+  function toggle(id: string) {
+    setMessage("");
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function run(fn: () => Promise<{ error?: Parameters<typeof errorText>[0]; orphaned?: number }>, after?: () => void) {
     setError("");
     setMessage("");
     startTransition(async () => {
       const result = await fn();
-      if (result.error) setError(result.error);
-      if (result.message) setMessage(result.message);
+      if (result.error) {
+        setError(errorText(result.error));
+        return;
+      }
+      after?.();
+      if (result.orphaned) {
+        setMessage(f(t.staff.orphaned, { count: result.orphaned }));
+      }
     });
   }
 
+  function saveMenu() {
+    const next = [...selected];
+    run(
+      () => syncMenuItems(menuId, next),
+      () => {
+        setSavedSet(next);
+        setMessage(t.staff.menuSaved);
+      },
+    );
+  }
+
   return (
-    <div className="space-y-5">
-      <Notice>{error}</Notice>
-      <Notice tone="good">{message}</Notice>
+    <div>
+      <div className="mb-4 space-y-2">
+        <Notice>{error}</Notice>
+        <Notice tone="good">{message}</Notice>
+      </div>
 
-      <Card>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">
-            On the menu{" "}
-            <span className="text-muted">({onMenu.length})</span>
-          </h2>
-          {published ? (
-            locked ? (
-              <Badge tone="bad">Locked</Badge>
-            ) : (
-              <Badge tone="good">Published</Badge>
-            )
+      <Section
+        title={t.staff.pickDishes}
+        description={t.staff.pickDishesBody}
+        aside={
+          !published ? (
+            <Badge tone="warn">{t.staff.draft}</Badge>
+          ) : orderingClosed ? (
+            <Badge tone="bad">{t.staff.orderingClosed}</Badge>
           ) : (
-            <Badge tone="warn">Draft — employees can&apos;t see this yet</Badge>
-          )}
-        </div>
-
-        {onMenu.length === 0 ? (
-          <p className="text-sm text-muted">
-            Nothing added yet. Add whatever the restaurant is bringing today.
-          </p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {onMenu.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 py-2">
-                <span className="text-sm">{item.name}</span>
-                <Button
-                  variant="danger"
-                  disabled={pending || closed}
-                  onClick={() => run(() => removeItem(menuId, item.id))}
+            <Badge tone="good">{t.staff.published}</Badge>
+          )
+        }
+      >
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {library.map((item) => {
+            const on = selected.includes(item.id);
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  disabled={orderingClosed}
+                  aria-pressed={on}
+                  onClick={() => toggle(item.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3.5 text-left transition active:scale-[0.99] disabled:opacity-55 ${
+                    on ? "border-brand bg-brand-soft" : "border-line bg-surface hover:border-brand/50"
+                  }`}
                 >
-                  Remove
-                </Button>
+                  <Tick on={on} />
+                  <span className={`text-[0.95rem] ${on ? "font-semibold" : "font-medium"}`}>
+                    {dish(item)}
+                  </span>
+                </button>
               </li>
-            ))}
-          </ul>
-        )}
+            );
+          })}
+        </ul>
 
-        {!closed && (
-          <div className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2">
-            <div className="flex items-end gap-2">
-              <Select
-                label="Add from library"
-                value={pickId}
-                onChange={(e) => setPickId(e.target.value)}
-              >
-                <option value="">Choose an item…</option>
-                {available.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </Select>
+        {!orderingClosed && (
+          <Card className="mt-4">
+            <p className="mb-2 text-sm font-medium">{t.staff.oneOff}</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Input
+                  value={newName}
+                  placeholder={t.staff.oneOffPlaceholder}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+              </div>
               <Button
-                disabled={pending || !pickId}
-                onClick={() =>
-                  run(async () => {
-                    const result = await addExistingItem(menuId, pickId);
-                    setPickId("");
-                    return result;
-                  })
-                }
-              >
-                Add
-              </Button>
-            </div>
-
-            <div className="flex items-end gap-2">
-              <Input
-                label="Or add something new"
-                value={newName}
-                placeholder="e.g. Beef tehari"
-                onChange={(e) => setNewName(e.target.value)}
-              />
-              <Button
+                variant="secondary"
                 disabled={pending || newName.trim().length < 2}
                 onClick={() =>
-                  run(async () => {
-                    const result = await addNewItem(menuId, newName);
-                    if (!result.error) setNewName("");
-                    return result;
-                  })
+                  run(
+                    async () => {
+                      const result = await addOneOffDish(newName);
+                      // A brand-new dish should arrive already ticked.
+                      if (result.itemId) {
+                        setSelected((prev) =>
+                          prev.includes(result.itemId!) ? prev : [...prev, result.itemId!],
+                        );
+                        setNewName("");
+                      }
+                      return result;
+                    },
+                  )
                 }
               >
-                Add
+                {t.staff.oneOffAdd}
               </Button>
             </div>
+          </Card>
+        )}
+      </Section>
+
+      <Section title={t.staff.cutoff}>
+        <Card>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-40">
+              <Input
+                label={t.staff.cutoffLabel}
+                type="time"
+                value={cutoff}
+                disabled={lockedEarly}
+                onChange={(e) => setCutoffValue(e.target.value)}
+              />
+            </div>
+            <Button
+              variant="secondary"
+              disabled={pending || lockedEarly || cutoff === cutoffHHMM}
+              onClick={() => run(() => setCutoff(menuId, menuDate, cutoff))}
+            >
+              {t.staff.saveCutoff}
+            </Button>
           </div>
-        )}
-      </Card>
+        </Card>
+      </Section>
 
-      <Card>
-        <h2 className="mb-3 text-lg font-semibold">Cutoff</h2>
-        <div className="flex flex-wrap items-end gap-3">
-          <Input
-            label="Ordering closes at"
-            type="time"
-            value={cutoff}
-            disabled={closed}
-            onChange={(e) => setCutoffValue(e.target.value)}
-            className="w-40"
-          />
-          <Button
-            variant="secondary"
-            disabled={pending || closed || cutoff === cutoffHHMM}
-            onClick={() => run(() => setCutoff(menuId, menuDate, cutoff))}
-          >
-            Save cutoff
-          </Button>
+      {published && !lockedEarly && !orderingClosed && (
+        <Button variant="secondary" disabled={pending} onClick={() => run(() => lockMenu(menuId))}>
+          {t.staff.closeNow}
+        </Button>
+      )}
+
+      {/* The primary action follows the thumb on mobile and stays visible. */}
+      <div
+        className="fixed inset-x-0 bottom-[4.25rem] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-md md:static md:mt-6 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-4xl items-center gap-3">
+          <span className="text-sm text-muted md:hidden">
+            {f(t.staff.selected, { count: selected.length })}
+          </span>
+          <div className="ml-auto flex gap-2">
+            {dirty && (
+              <Button disabled={pending} onClick={saveMenu}>
+                {pending ? t.common.saving : t.staff.saveMenu}
+              </Button>
+            )}
+            {!published && (
+              <Button
+                variant={dirty ? "secondary" : "primary"}
+                disabled={pending || selected.length === 0}
+                onClick={() =>
+                  run(
+                    async () => {
+                      // Publishing an unsaved selection would ship the wrong menu.
+                      if (dirty) {
+                        const sync = await syncMenuItems(menuId, selected);
+                        if (sync.error) return sync;
+                        setSavedSet([...selected]);
+                      }
+                      const result = await publishMenu(menuId);
+                      if (!result.error) {
+                        setMessage(f(t.staff.publishResult, { count: result.autoPicks ?? 0 }));
+                      }
+                      return result;
+                    },
+                  )
+                }
+              >
+                {t.staff.publish}
+              </Button>
+            )}
+          </div>
         </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-3">
-        {!published && (
-          <Button
-            disabled={pending || onMenu.length === 0}
-            onClick={() => run(() => publishMenu(menuId))}
-          >
-            Publish to employees
-          </Button>
-        )}
-        {published && !locked && (
-          <Button variant="secondary" disabled={pending} onClick={() => run(() => lockMenu(menuId))}>
-            Close ordering now
-          </Button>
-        )}
+        <p className="mx-auto mt-1 hidden max-w-4xl text-right text-xs text-muted md:block">
+          {f(t.staff.selected, { count: selected.length })} · {n(library.length)}
+        </p>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export type HistoryRow = {
   id: string;
   source: "manual" | "auto";
   picked_at: string;
-  items: { name: string } | null;
+  items: { name: string; name_bn: string | null } | null;
   profiles: { name: string; phone: string } | null;
   daily_menus: { menu_date: string } | null;
 };
@@ -30,7 +30,9 @@ export async function fetchHistory(filters: HistoryFilters, limit = 1000): Promi
 
   let query = supabase
     .from("orders")
-    .select("id, source, picked_at, items(name), profiles(name, phone), daily_menus!inner(menu_date)")
+    .select(
+      "id, source, picked_at, items(name, name_bn), profiles(name, phone), daily_menus!inner(menu_date)",
+    )
     .order("picked_at", { ascending: false })
     .limit(limit);
 

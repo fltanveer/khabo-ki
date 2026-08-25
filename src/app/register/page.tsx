@@ -4,9 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { isValidPhone } from "@/lib/phone";
 import { registerEmployee } from "./actions";
+import { useI18n } from "@/components/I18nProvider";
+import { useErrorText } from "@/components/useErrorText";
+import { AuthLayout } from "@/components/AuthLayout";
 import { Button, Card, Input, Notice } from "@/components/ui";
 
 export default function RegisterPage() {
+  const { t } = useI18n();
+  const errorText = useErrorText();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -18,75 +23,77 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (name.trim().length < 2) return setError("Enter your full name.");
-    if (!isValidPhone(phone)) return setError("Enter a valid phone number.");
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (name.trim().length < 2) return setError(t.auth.invalidName);
+    if (!isValidPhone(phone)) return setError(t.auth.invalidPhone);
+    if (password.length < 8) return setError(t.auth.shortPassword);
 
     setBusy(true);
     const result = await registerEmployee(name, phone, password);
     setBusy(false);
 
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-
+    if (result.error) return setError(errorText(result.error));
     setDone(true);
   }
 
   if (done) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5">
+      <AuthLayout title={t.auth.registrationReceived}>
         <Card>
-          <h1 className="text-xl font-semibold">Registration received</h1>
-          <p className="mt-2 text-sm text-muted">
-            An admin needs to approve your account before you can order. You&apos;ll be able to
-            sign in once that&apos;s done.
-          </p>
-          <Link href="/login" className="mt-4 inline-block text-sm text-brand underline">
-            Back to sign in
+          <p className="text-sm leading-relaxed text-muted">{t.auth.registrationBody}</p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block text-sm font-medium text-brand underline underline-offset-2"
+          >
+            {t.auth.backToSignIn}
           </Link>
         </Card>
-      </main>
+      </AuthLayout>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5">
-      <h1 className="mb-1 text-3xl font-semibold tracking-tight">Register</h1>
-      <p className="mb-6 text-sm text-muted">An admin approves new accounts before first order.</p>
-
+    <AuthLayout
+      title={t.auth.register}
+      subtitle={t.auth.registerSubtitle}
+      footer={
+        <>
+          {t.auth.alreadyRegistered}{" "}
+          <Link href="/login" className="font-medium text-brand underline underline-offset-2">
+            {t.common.signIn}
+          </Link>
+        </>
+      }
+    >
       <Card>
         <form onSubmit={onSubmit} className="space-y-4">
-          <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} />
           <Input
-            label="Phone number"
-            inputMode="tel"
+            label={t.auth.fullName}
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            label={t.auth.phone}
+            type="tel"
+            inputMode="numeric"
             autoComplete="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="01XXXXXXXXX"
+            placeholder={t.auth.phonePlaceholder}
           />
           <Input
-            label="Password"
+            label={t.auth.password}
             type="password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <Notice>{error}</Notice>
-          <Button type="submit" disabled={busy} className="w-full">
-            {busy ? "Creating account…" : "Create account"}
+          <Button type="submit" disabled={busy} block>
+            {busy ? t.auth.creatingAccount : t.auth.createAccount}
           </Button>
         </form>
       </Card>
-
-      <p className="mt-4 text-center text-sm text-muted">
-        Already registered?{" "}
-        <Link href="/login" className="text-brand underline">
-          Sign in
-        </Link>
-      </p>
-    </main>
+    </AuthLayout>
   );
 }

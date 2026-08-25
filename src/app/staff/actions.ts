@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { cutoffFor } from "@/lib/date";
+import type { ActionResult } from "@/lib/errors";
 
-type Result = { error?: string; message?: string };
+type Result = ActionResult & { autoPicks?: number; saved?: boolean };
 
 const DEFAULT_CUTOFF = "10:30";
 
@@ -19,7 +20,7 @@ export async function ensureMenu(menuDate: string): Promise<Result> {
   });
 
   // A duplicate just means another staff member started the day first.
-  if (error && !error.message.includes("duplicate")) return { error: error.message };
+  if (error && !error.message.includes("duplicate")) return { error: "generic" };
 
   revalidatePath("/staff");
   return {};
@@ -34,33 +35,38 @@ export async function setCutoff(menuId: string, menuDate: string, hhmm: string):
     .update({ cutoff_time: cutoffFor(menuDate, hhmm) })
     .eq("id", menuId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
   revalidatePath("/staff");
-  return {};
+  return { saved: true };
 }
 
-export async function addExistingItem(menuId: string, itemId: string): Promise<Result> {
+// Staff tick the whole day's menu at once, so it saves as a set. Dishes that
+// were unticked are removed, which drops the orders that pointed at them —
+// the count of people left with nothing comes back so we can warn about it.
+export async function syncMenuItems(menuId: string, itemIds: string[]): Promise<Result> {
   await requireRole("staff", "admin");
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("add_menu_item", {
+  const { data, error } = await supabase.rpc("sync_menu_items", {
     p_menu_id: menuId,
-    p_item_id: itemId,
+    p_item_ids: itemIds,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
+
   revalidatePath("/staff");
-  return {};
+  revalidatePath("/staff/orders");
+  return { saved: true, orphaned: (data ?? []).length };
 }
 
 // A one-off dish the restaurant brought today. It joins the library so it can
-// be reused tomorrow without retyping.
-export async function addNewItem(menuId: string, rawName: string): Promise<Result> {
+// be reused tomorrow without retyping, and sorts after the standing dishes.
+export async function addOneOffDish(rawName: string): Promise<Result & { itemId?: string }> {
   const profile = await requireRole("staff", "admin");
   const supabase = await createClient();
 
   const name = rawName.trim();
-  if (name.length < 2) return { error: "Give the item a name." };
+  if (name.length < 2) return { error: "dish_name_too_short" };
 
   const { data: existing } = await supabase
     .from("items")
@@ -68,41 +74,23 @@ export async function addNewItem(menuId: string, rawName: string): Promise<Resul
     .ilike("name", name)
     .maybeSingle();
 
-  let itemId = existing?.id;
-
-  if (!itemId) {
-    const { data: created, error } = await supabase
-      .from("items")
-      .insert({ name, created_by: profile.id })
-      .select("id")
-      .single();
-    if (error) return { error: error.message };
-    itemId = created.id;
+  if (existing) {
+    await supabase.from("items").update({ is_active: true }).eq("id", existing.id);
+    revalidatePath("/staff");
+    return { itemId: existing.id };
   }
 
-  return addExistingItem(menuId, itemId);
-}
+  const { data: created, error } = await supabase
+    .from("items")
+    .insert({ name, created_by: profile.id })
+    .select("id")
+    .single();
 
-export async function removeItem(menuId: string, itemId: string): Promise<Result> {
-  await requireRole("staff", "admin");
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.rpc("remove_menu_item", {
-    p_menu_id: menuId,
-    p_item_id: itemId,
-  });
-
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
   revalidatePath("/staff");
-  revalidatePath("/staff/orders");
-
-  const orphaned = (data ?? []).length;
-  return orphaned
-    ? {
-        message: `${orphaned} ${orphaned === 1 ? "person" : "people"} had ordered that and now have no lunch — tell them to pick again.`,
-      }
-    : {};
+  revalidatePath("/staff/items");
+  return { itemId: created.id };
 }
 
 export async function publishMenu(menuId: string): Promise<Result> {
@@ -110,11 +98,11 @@ export async function publishMenu(menuId: string): Promise<Result> {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("publish_menu", { p_menu_id: menuId });
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
   revalidatePath("/staff");
   revalidatePath("/staff/orders");
-  return { message: `Published. ${data ?? 0} auto-picks seated.` };
+  return { autoPicks: (data as number) ?? 0 };
 }
 
 export async function lockMenu(menuId: string): Promise<Result> {
@@ -122,11 +110,11 @@ export async function lockMenu(menuId: string): Promise<Result> {
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("lock_menu", { p_menu_id: menuId });
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
   revalidatePath("/staff");
   revalidatePath("/staff/orders");
-  return { message: "Ordering closed." };
+  return { saved: true };
 }
 
 export async function createLibraryItem(rawName: string): Promise<Result> {
@@ -134,14 +122,15 @@ export async function createLibraryItem(rawName: string): Promise<Result> {
   const supabase = await createClient();
 
   const name = rawName.trim();
-  if (name.length < 2) return { error: "Give the item a name." };
+  if (name.length < 2) return { error: "dish_name_too_short" };
 
   const { error } = await supabase.from("items").insert({ name, created_by: profile.id });
   if (error) {
-    return { error: error.message.includes("duplicate") ? "That item already exists." : error.message };
+    return { error: error.message.includes("duplicate") ? "duplicate_dish" : "generic" };
   }
 
   revalidatePath("/staff/items");
+  revalidatePath("/staff");
   return {};
 }
 
@@ -150,8 +139,9 @@ export async function setItemActive(itemId: string, isActive: boolean): Promise<
   const supabase = await createClient();
 
   const { error } = await supabase.from("items").update({ is_active: isActive }).eq("id", itemId);
-  if (error) return { error: error.message };
+  if (error) return { error: "generic" };
 
   revalidatePath("/staff/items");
+  revalidatePath("/staff");
   return {};
 }

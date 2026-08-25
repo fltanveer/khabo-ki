@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isValidPhone, phoneToEmail } from "@/lib/phone";
+import { useI18n } from "@/components/I18nProvider";
+import { AuthLayout } from "@/components/AuthLayout";
 import { Button, Card, Input, Notice } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,10 +21,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!isValidPhone(phone)) {
-      setError("Enter a valid phone number.");
-      return;
-    }
+    if (!isValidPhone(phone)) return setError(t.auth.invalidPhone);
 
     setBusy(true);
     const supabase = createClient();
@@ -31,50 +31,48 @@ export default function LoginPage() {
     });
     setBusy(false);
 
-    if (authError) {
-      setError("Wrong phone number or password.");
-      return;
-    }
+    if (authError) return setError(t.auth.badCredentials);
 
     router.replace("/");
     router.refresh();
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5">
-      <h1 className="mb-1 text-3xl font-semibold tracking-tight">Khabo Ki?</h1>
-      <p className="mb-6 text-sm text-muted">Sign in to pick today&apos;s lunch.</p>
-
+    <AuthLayout
+      title={t.auth.signInSubtitle}
+      footer={
+        <>
+          {t.auth.newHere}{" "}
+          <Link href="/register" className="font-medium text-brand underline underline-offset-2">
+            {t.auth.register}
+          </Link>
+        </>
+      }
+    >
       <Card>
         <form onSubmit={onSubmit} className="space-y-4">
           <Input
-            label="Phone number"
-            inputMode="tel"
+            label={t.auth.phone}
+            type="tel"
+            inputMode="numeric"
             autoComplete="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="01XXXXXXXXX"
+            placeholder={t.auth.phonePlaceholder}
           />
           <Input
-            label="Password"
+            label={t.auth.password}
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <Notice>{error}</Notice>
-          <Button type="submit" disabled={busy} className="w-full">
-            {busy ? "Signing in…" : "Sign in"}
+          <Button type="submit" disabled={busy} block>
+            {busy ? t.common.signingIn : t.common.signIn}
           </Button>
         </form>
       </Card>
-
-      <p className="mt-4 text-center text-sm text-muted">
-        New here?{" "}
-        <Link href="/register" className="text-brand underline">
-          Register
-        </Link>
-      </p>
-    </main>
+    </AuthLayout>
   );
 }

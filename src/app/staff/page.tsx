@@ -1,7 +1,9 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { APP_TZ, formatDate, isPast, today } from "@/lib/date";
-import { Card, Empty, PageHeader } from "@/components/ui";
+import { getI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n";
+import { Badge, Empty, PageHeader } from "@/components/ui";
 import { MenuBuilder } from "./MenuBuilder";
 import { StartDayButton } from "./StartDayButton";
 
@@ -18,6 +20,7 @@ function cutoffToHHMM(iso: string): string {
 
 export default async function StaffToday() {
   await requireRole("staff", "admin");
+  const { lang, t } = await getI18n();
   const supabase = await createClient();
   const menuDate = today();
 
@@ -30,11 +33,9 @@ export default async function StaffToday() {
   if (!menu) {
     return (
       <>
-        <PageHeader title="Today's menu" subtitle={formatDate(menuDate)} />
+        <PageHeader title={t.staff.title} subtitle={formatDate(menuDate, lang)} />
         <Empty>
-          <p className="mb-4">
-            No menu for today yet. Start one, add what the restaurant is bringing, then publish.
-          </p>
+          <p className="mb-4">{t.staff.noMenuYet}</p>
           <div className="flex justify-center">
             <StartDayButton menuDate={menuDate} />
           </div>
@@ -44,37 +45,53 @@ export default async function StaffToday() {
   }
 
   const [{ data: menuItems }, { data: library }, { count: orderCount }] = await Promise.all([
-    supabase.from("daily_menu_items").select("items(id, name)").eq("daily_menu_id", menu.id),
-    supabase.from("items").select("id, name").eq("is_active", true).order("name"),
+    supabase
+      .from("daily_menu_items")
+      .select("item_id, items(id, name, name_bn, sort_order)")
+      .eq("daily_menu_id", menu.id),
+    supabase
+      .from("items")
+      .select("id, name, name_bn, sort_order")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("name"),
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
       .eq("daily_menu_id", menu.id),
   ]);
 
-  const onMenu = (menuItems ?? [])
-    .flatMap((row) => {
-      const item = row.items as unknown as { id: string; name: string } | null;
-      return item ? [item] : [];
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  type LibItem = { id: string; name: string; name_bn: string | null; sort_order: number };
+
+  const onMenu = (menuItems ?? []).flatMap((row) => {
+    const item = row.items as unknown as LibItem | null;
+    return item ? [item] : [];
+  });
+
+  // A dish that was retired after being added to today's menu still has to be
+  // shown, otherwise it sits selected but invisible and can never be unticked.
+  const byId = new Map<string, LibItem>();
+  for (const item of [...((library ?? []) as LibItem[]), ...onMenu]) byId.set(item.id, item);
+  const tiles = [...byId.values()].sort(
+    (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
+  );
 
   const published = menu.status === "published";
-  const locked = Boolean(menu.locked_at) || isPast(menu.cutoff_time);
+  const lockedEarly = Boolean(menu.locked_at);
+
+  // A draft is never "closed" — nobody can order from an unpublished menu, so
+  // it stays fully editable even if its cutoff has already gone by.
+  const orderingClosed = published && (lockedEarly || isPast(menu.cutoff_time));
 
   return (
     <>
       <PageHeader
-        title="Today's menu"
-        subtitle={formatDate(menuDate)}
+        title={t.staff.title}
+        subtitle={formatDate(menuDate, lang)}
         action={
           published ? (
-            <Card className="px-4 py-2">
-              <span className="text-sm">
-                <strong>{orderCount ?? 0}</strong> orders in
-              </span>
-            </Card>
-          ) : null
+            <Badge tone="brand">{fill(t.staff.ordersIn, { count: orderCount ?? 0 }, lang)}</Badge>
+          ) : undefined
         }
       />
 
@@ -83,10 +100,10 @@ export default async function StaffToday() {
         menuDate={menu.menu_date}
         cutoffHHMM={cutoffToHHMM(menu.cutoff_time)}
         published={published}
-        locked={locked}
-        closed={locked}
-        onMenu={onMenu}
-        library={library ?? []}
+        lockedEarly={lockedEarly}
+        orderingClosed={orderingClosed}
+        library={tiles}
+        initialSelected={onMenu.map((item) => item.id)}
       />
     </>
   );

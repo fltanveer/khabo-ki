@@ -2,172 +2,166 @@
 
 import { useState, useTransition } from "react";
 import { approveUser, createUser, setUserStatus } from "./actions";
-import { Badge, Button, Card, Empty, Input, Notice, Select } from "@/components/ui";
-import type { Profile } from "@/lib/types";
+import { useI18n } from "@/components/I18nProvider";
+import { useErrorText } from "@/components/useErrorText";
+import { Badge, Button, Card, Empty, Input, List, Notice, Row, Section, Select } from "@/components/ui";
+import type { Profile, Status } from "@/lib/types";
 
-const TONE = { pending: "warn", active: "good", inactive: "bad" } as const;
-
-function PersonRow({
-  person,
-  pending,
-  onApprove,
-  onStatus,
-  selfId,
-}: {
-  person: Profile;
-  pending: boolean;
-  onApprove: (id: string) => void;
-  onStatus: (id: string, status: "active" | "inactive") => void;
-  selfId: string;
-}) {
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-      <div>
-        <p className="text-sm font-medium">
-          {person.name}
-          {person.id === selfId && <span className="text-muted"> (you)</span>}
-        </p>
-        <p className="text-xs text-muted">
-          {person.phone} · {person.role}
-        </p>
-      </div>
-      <div className="flex items-center gap-3">
-        <Badge tone={TONE[person.status]}>{person.status}</Badge>
-        {person.status === "pending" && (
-          <Button disabled={pending} onClick={() => onApprove(person.id)}>
-            Approve
-          </Button>
-        )}
-        {person.status === "active" && person.id !== selfId && (
-          <Button variant="danger" disabled={pending} onClick={() => onStatus(person.id, "inactive")}>
-            Deactivate
-          </Button>
-        )}
-        {person.status === "inactive" && (
-          <Button variant="secondary" disabled={pending} onClick={() => onStatus(person.id, "active")}>
-            Reactivate
-          </Button>
-        )}
-      </div>
-    </li>
-  );
-}
+const TONE: Record<Status, "warn" | "good" | "bad"> = {
+  pending: "warn",
+  active: "good",
+  inactive: "bad",
+};
 
 export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: string }) {
+  const { t, f, n } = useI18n();
+  const errorText = useErrorText();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", password: "", role: "staff" as "staff" | "admin" });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    password: "",
+    role: "staff" as "staff" | "admin",
+  });
   const [pending, startTransition] = useTransition();
 
-  function run(fn: () => Promise<{ error?: string; message?: string }>) {
+  function run(
+    fn: () => Promise<{ error?: Parameters<typeof errorText>[0]; created?: boolean }>,
+    onDone?: () => void,
+  ) {
     setError("");
     setMessage("");
     startTransition(async () => {
       const result = await fn();
-      if (result.error) setError(result.error);
-      if (result.message) setMessage(result.message);
+      if (result.error) {
+        setError(errorText(result.error));
+        return;
+      }
+      onDone?.();
     });
+  }
+
+  function personRow(person: Profile) {
+    return (
+      <Row key={person.id}>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">
+            {person.name}
+            {person.id === selfId && <span className="text-muted"> ({t.admin.you})</span>}
+          </p>
+          <p className="mt-0.5 text-xs text-muted">
+            {person.phone} · {t.roles[person.role]}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge tone={TONE[person.status]}>{t.status[person.status]}</Badge>
+          {person.status === "pending" && (
+            <Button size="sm" disabled={pending} onClick={() => run(() => approveUser(person.id))}>
+              {t.admin.approve}
+            </Button>
+          )}
+          {person.status === "active" && person.id !== selfId && (
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => setUserStatus(person.id, "inactive"))}
+            >
+              {t.admin.deactivate}
+            </Button>
+          )}
+          {person.status === "inactive" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => setUserStatus(person.id, "active"))}
+            >
+              {t.admin.reactivate}
+            </Button>
+          )}
+        </div>
+      </Row>
+    );
   }
 
   const waiting = people.filter((p) => p.status === "pending");
   const rest = people.filter((p) => p.status !== "pending");
 
   return (
-    <div className="space-y-8">
-      <Notice>{error}</Notice>
-      <Notice tone="good">{message}</Notice>
+    <div>
+      <div className="mb-4 space-y-2">
+        <Notice>{error}</Notice>
+        <Notice tone="good">{message}</Notice>
+      </div>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">
-          Waiting for approval <span className="text-muted">({waiting.length})</span>
-        </h2>
+      <Section
+        title={t.admin.waiting}
+        aside={waiting.length > 0 ? <Badge tone="warn">{n(waiting.length)}</Badge> : undefined}
+      >
         {waiting.length === 0 ? (
-          <Empty>Nobody waiting.</Empty>
+          <Empty>{t.admin.nobodyWaiting}</Empty>
         ) : (
-          <Card className="p-0">
-            <ul className="divide-y divide-line">
-              {waiting.map((person) => (
-                <PersonRow
-                  key={person.id}
-                  person={person}
-                  pending={pending}
-                  selfId={selfId}
-                  onApprove={(id) => run(() => approveUser(id))}
-                  onStatus={(id, status) => run(() => setUserStatus(id, status))}
-                />
-              ))}
-            </ul>
-          </Card>
+          <List>{waiting.map(personRow)}</List>
         )}
-      </section>
+      </Section>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Everyone else</h2>
-        <Card className="p-0">
-          <ul className="divide-y divide-line">
-            {rest.map((person) => (
-              <PersonRow
-                key={person.id}
-                person={person}
-                pending={pending}
-                selfId={selfId}
-                onApprove={(id) => run(() => approveUser(id))}
-                onStatus={(id, status) => run(() => setUserStatus(id, status))}
-              />
-            ))}
-          </ul>
-        </Card>
-      </section>
+      <Section title={t.admin.everyoneElse} aside={<Badge>{n(rest.length)}</Badge>}>
+        <List>{rest.map(personRow)}</List>
+      </Section>
 
-      <section>
-        <h2 className="mb-1 text-lg font-semibold">Create a staff or admin account</h2>
-        <p className="mb-3 text-sm text-muted">
-          Employees register themselves. Staff and admin accounts are made here and are active
-          straight away.
-        </p>
+      <Section title={t.admin.createTitle} description={t.admin.createBody}>
         <Card>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
-              label="Full name"
+              label={t.auth.fullName}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <Input
-              label="Phone number"
-              inputMode="tel"
+              label={t.auth.phone}
+              type="tel"
+              inputMode="numeric"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
             <Input
-              label="Temporary password"
+              label={t.admin.tempPassword}
               type="text"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
             <Select
-              label="Role"
+              label={t.admin.role}
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value as "staff" | "admin" })}
             >
-              <option value="staff">Staff</option>
-              <option value="admin">Admin</option>
+              <option value="staff">{t.roles.staff}</option>
+              <option value="admin">{t.roles.admin}</option>
             </Select>
           </div>
           <Button
             className="mt-4"
             disabled={pending}
             onClick={() =>
-              run(async () => {
-                const result = await createUser(form.name, form.phone, form.password, form.role);
-                if (!result.error) setForm({ name: "", phone: "", password: "", role: form.role });
-                return result;
-              })
+              run(
+                () => createUser(form.name, form.phone, form.password, form.role),
+                () => {
+                  setMessage(
+                    f(t.admin.created, {
+                      role: form.role === "admin" ? t.roles.admin : t.roles.staff,
+                    }),
+                  );
+                  setForm({ name: "", phone: "", password: "", role: form.role });
+                },
+              )
             }
           >
-            Create account
+            {t.auth.createAccount}
           </Button>
         </Card>
-      </section>
+      </Section>
     </div>
   );
 }

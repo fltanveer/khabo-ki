@@ -2,12 +2,18 @@
 // viewer's local clock for "today" or for cutoff maths.
 export const APP_TZ = "Asia/Dhaka";
 
+type Lang = "en" | "bn";
+
+// Bangla gets Bengali numerals and month names; everything still renders in
+// office time regardless of where the viewer is.
+const locale = (lang: Lang = "en") => (lang === "bn" ? "bn-BD" : "en-GB");
+
 export function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TZ }).format(new Date());
 }
 
-export function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatDate(iso: string, lang: Lang = "en"): string {
+  return new Intl.DateTimeFormat(locale(lang), {
     timeZone: APP_TZ,
     day: "numeric",
     month: "short",
@@ -15,8 +21,8 @@ export function formatDate(iso: string): string {
   }).format(new Date(`${iso}T00:00:00Z`));
 }
 
-export function formatTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatTime(iso: string, lang: Lang = "en"): string {
+  return new Intl.DateTimeFormat(locale(lang), {
     timeZone: APP_TZ,
     hour: "numeric",
     minute: "2-digit",
@@ -24,8 +30,8 @@ export function formatTime(iso: string): string {
   }).format(new Date(iso));
 }
 
-export function formatDateTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatDateTime(iso: string, lang: Lang = "en"): string {
+  return new Intl.DateTimeFormat(locale(lang), {
     timeZone: APP_TZ,
     day: "numeric",
     month: "short",
