@@ -8,7 +8,8 @@ import type { ActionResult } from "@/lib/errors";
 
 type Result = ActionResult & { autoPicks?: number; saved?: boolean };
 
-const DEFAULT_CUTOFF = "10:30";
+// Office time. Staff can still move it per day from the menu screen.
+const DEFAULT_CUTOFF = "11:45";
 
 export async function ensureMenu(menuDate: string): Promise<Result> {
   await requireRole("staff", "admin");
