@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { clearPick, pickItem } from "./actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
@@ -35,20 +35,25 @@ export function MenuPicker({
   const errorText = useErrorText();
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
-  // Show the tap immediately; the server round-trip confirms it a moment later.
-  const [optimistic, setOptimistic] = useState<string | null>(null);
 
-  const selectedId = pending && optimistic !== null ? optimistic || null : currentItemId;
+  // useOptimistic holds the tapped value until the refreshed server props
+  // arrive, then hands over in the same commit. Clearing it by hand instead
+  // left a frame where the stale prop showed through, which read as the
+  // selection flicking back to the previous dish.
+  const [selectedId, setSelectedId] = useOptimistic(
+    currentItemId,
+    (_current, next: string | null) => next,
+  );
 
   function choose(itemId: string) {
     if (!open) return;
     setError("");
-    const clearing = itemId === currentItemId;
-    setOptimistic(clearing ? "" : itemId);
+    const clearing = itemId === selectedId;
+
     startTransition(async () => {
+      setSelectedId(clearing ? null : itemId);
       const result = clearing ? await clearPick(menuId) : await pickItem(menuId, itemId);
       if (result.error) setError(errorText(result.error));
-      setOptimistic(null);
     });
   }
 
@@ -77,7 +82,7 @@ export function MenuPicker({
                 </span>
                 {selected ? (
                   <span className="flex items-center gap-2">
-                    {source === "auto" && !pending && (
+                    {source === "auto" && selectedId === currentItemId && (
                       <Badge tone="brand">{t.employee.autoPicked}</Badge>
                     )}
                     <Check />
