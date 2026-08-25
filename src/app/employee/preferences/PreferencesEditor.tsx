@@ -142,7 +142,7 @@ export function PreferencesEditor({
                     type="button"
                     disabled={pending}
                     onClick={() => persist([...ranked, item.id])}
-                    className="rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-medium transition hover:border-brand hover:text-brand disabled:opacity-45"
+                    className="rounded-full border border-line-strong bg-surface px-3.5 py-2 text-sm font-medium transition hover:border-brand hover:text-brand disabled:opacity-45"
                   >
                     + {dish(item)}
                   </button>

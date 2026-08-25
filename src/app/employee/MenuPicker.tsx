@@ -69,7 +69,7 @@ export function MenuPicker({
                 className={`flex w-full items-center justify-between gap-3 rounded-card border px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-60 ${
                   selected
                     ? "border-brand bg-brand-soft"
-                    : "border-line bg-surface hover:border-brand/50"
+                    : "border-line-strong bg-surface hover:border-brand"
                 }`}
               >
                 <span className={`text-[0.95rem] ${selected ? "font-semibold" : "font-medium"}`}>
@@ -83,7 +83,7 @@ export function MenuPicker({
                     <Check />
                   </span>
                 ) : (
-                  <span className="h-6 w-6 shrink-0 rounded-full border border-line" />
+                  <span className="h-6 w-6 shrink-0 rounded-full border-2 border-line-strong" />
                 )}
               </button>
             </li>

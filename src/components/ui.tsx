@@ -71,8 +71,8 @@ type ButtonProps = ComponentProps<"button"> & {
 
 const BUTTON_VARIANTS: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary: "bg-brand text-on-brand hover:opacity-90",
-  secondary: "border border-line bg-surface text-ink hover:bg-raised",
-  danger: "border border-bad/40 bg-transparent text-bad hover:bg-bad-soft",
+  secondary: "border border-line-strong bg-surface text-ink hover:bg-raised",
+  danger: "border border-bad/55 bg-transparent text-bad hover:bg-bad-soft",
   ghost: "text-muted hover:bg-raised hover:text-ink",
 };
 
@@ -96,7 +96,7 @@ export function Button({
 }
 
 const FIELD =
-  "w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand";
+  "w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/25";
 
 export function Input({
   label,

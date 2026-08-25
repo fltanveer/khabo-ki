@@ -38,11 +38,11 @@ export default async function StaffOrders({
         type="date"
         name="date"
         defaultValue={menuDate}
-        className="rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink"
+        className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm text-ink"
       />
       <button
         type="submit"
-        className="min-h-10 rounded-xl border border-line px-3 text-sm font-medium"
+        className="min-h-10 rounded-xl border border-line-strong px-3 text-sm font-medium"
       >
         {t.staff.go}
       </button>

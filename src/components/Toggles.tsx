@@ -40,7 +40,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={`${t.common.theme}: ${mode === "dark" ? t.common.dark : t.common.light}`}
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95"
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line-strong bg-surface text-ink transition active:scale-95"
     >
       {mode === "dark" ? (
         <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -66,7 +66,7 @@ export function LangToggle() {
   }
 
   return (
-    <div className="flex shrink-0 items-center rounded-full border border-line bg-surface p-0.5">
+    <div className="flex shrink-0 items-center rounded-full border border-line-strong bg-surface p-0.5">
       {LANGS.map((code) => (
         <button
           key={code}

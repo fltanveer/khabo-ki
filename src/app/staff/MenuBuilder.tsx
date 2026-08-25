@@ -18,7 +18,7 @@ function Tick({ on }: { on: boolean }) {
   return (
     <span
       className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${
-        on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface"
+        on ? "border-brand bg-brand text-on-brand" : "border-2 border-line-strong bg-surface"
       }`}
     >
       {on && (
@@ -126,7 +126,7 @@ export function MenuBuilder({
                   aria-pressed={on}
                   onClick={() => toggle(item.id)}
                   className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3.5 text-left transition active:scale-[0.99] disabled:opacity-55 ${
-                    on ? "border-brand bg-brand-soft" : "border-line bg-surface hover:border-brand/50"
+                    on ? "border-brand bg-brand-soft" : "border-line-strong bg-surface hover:border-brand"
                   }`}
                 >
                   <Tick on={on} />

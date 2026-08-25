@@ -8,7 +8,8 @@ import { Badge, Card, Empty, List, PageHeader, Row } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-const FIELD = "w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink";
+const FIELD =
+  "w-full rounded-xl border border-line-strong bg-surface px-3 py-2.5 text-sm text-ink";
 
 export default async function AdminHistory({
   searchParams,
@@ -87,7 +88,7 @@ export default async function AdminHistory({
           <div className="sm:col-span-2 lg:col-span-4">
             <button
               type="submit"
-              className="min-h-11 w-full rounded-xl border border-line px-4 text-sm font-medium sm:min-h-10 sm:w-auto"
+              className="min-h-11 w-full rounded-xl border border-line-strong px-4 text-sm font-medium sm:min-h-10 sm:w-auto"
             >
               {t.admin.applyFilters}
             </button>
