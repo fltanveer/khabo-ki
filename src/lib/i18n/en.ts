@@ -91,6 +91,8 @@ export const en = {
     autoBody:
       "When a menu is published we order the highest item on this list that's available that day. You can still change it by hand before the cutoff.",
     nothingRanked: "Nothing ranked yet. Add dishes below and you'll be seated automatically.",
+    reorder: "Reorder",
+    dragHint: "Drag the handle to reorder, or focus it and use the arrow keys.",
     moveUp: "Move up",
     moveDown: "Move down",
     addToRanking: "Add to ranking",
