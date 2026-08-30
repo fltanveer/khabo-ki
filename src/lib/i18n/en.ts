@@ -304,6 +304,7 @@ export const en = {
   },
 
   events: {
+    treatShort: "Treat",
     nobodyIn: "Nobody has said yes yet.",
     outCount: "{count} not going",
     waitingCount: "{count} haven't replied",

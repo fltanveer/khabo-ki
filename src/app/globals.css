@@ -46,6 +46,15 @@
   --bad: oklch(0.52 0.18 22);
   --bad-soft: oklch(0.958 0.025 22);
 
+
+  /* A party is the one thing in this app that should shout. The ramp is
+     deliberately deep rather than neon: white sits at 6.1:1 or better on
+     every stop, and the softer secondary line still clears 5:1. */
+  --party-1: oklch(0.515 0.175 30);
+  --party-2: oklch(0.495 0.2 352);
+  --party-3: oklch(0.485 0.19 292);
+  --party-glow: oklch(0.495 0.2 352 / 0.3);
+
   --shadow-card: 0 1px 2px oklch(0.2 0.02 255 / 0.05);
   --font-app: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
@@ -95,6 +104,11 @@
   --warn-soft: oklch(0.285 0.032 88);
   --bad: oklch(0.72 0.15 22);
   --bad-soft: oklch(0.29 0.045 22);
+
+  --party-1: oklch(0.475 0.155 30);
+  --party-2: oklch(0.455 0.175 352);
+  --party-3: oklch(0.445 0.17 292);
+  --party-glow: oklch(0.455 0.175 352 / 0.42);
 
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3);
   color-scheme: dark;
@@ -150,5 +164,70 @@ button {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------ party banner */
+.announce {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-image: linear-gradient(115deg, var(--party-1), var(--party-2) 46%, var(--party-3));
+  background-size: 220% 220%;
+  box-shadow:
+    0 12px 32px -14px var(--party-glow),
+    0 2px 6px -2px var(--party-glow);
+  animation: announce-drift 16s ease-in-out infinite;
+}
+
+/* A soft highlight so the surface reads as lit rather than flat ink. */
+.announce::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120% 100% at 8% 0%,
+    oklch(1 0 0 / 0.22),
+    oklch(1 0 0 / 0) 62%
+  );
+}
+
+@keyframes announce-drift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.announce-emoji {
+  animation: announce-tilt 5s ease-in-out infinite;
+}
+
+@keyframes announce-tilt {
+  0%,
+  72%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  78% {
+    transform: rotate(-11deg) scale(1.07);
+  }
+  86% {
+    transform: rotate(9deg) scale(1.07);
+  }
+  92% {
+    transform: rotate(-4deg) scale(1.02);
+  }
+}
+
+/* Motion here is decoration, never information — drop all of it on request. */
+@media (prefers-reduced-motion: reduce) {
+  .announce,
+  .announce-emoji {
+    animation: none;
   }
 }

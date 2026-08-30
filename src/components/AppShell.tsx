@@ -20,18 +20,29 @@ type Icon =
   | "money";
 
 function NavIcon({ name }: { name: Icon }) {
+  // One family: every glyph is drawn on the same 24 grid at the same stroke
+  // weight, and no two share a silhouette. "Today" and "Preferences" used to
+  // be three horizontal lines each, which made them impossible to tell apart
+  // at tab-bar size.
   const paths: Record<Icon, ReturnType<typeof String>> = {
-    today: "M4 7h16M4 12h16M4 17h10",
-    prefs: "M5 6h14M5 12h9M5 18h5",
+    // a bowl of something hot
+    today: "M4 11h16a8 8 0 0 1-16 0ZM9 7.5c0-1 1.5-1.5 1.5-3M14 7.5c0-1 1.5-1.5 1.5-3",
+    // sliders
+    prefs:
+      "M4 8.5h4M12 8.5h8M4 15.5h10M18 15.5h2M12 8.5a2 2 0 1 0-4 0 2 2 0 0 0 4 0M18 15.5a2 2 0 1 0-4 0 2 2 0 0 0 4 0",
     history: "M12 7v5l3 2M4 12a8 8 0 1 0 8-8 8 8 0 0 0-8 8Z",
     menu: "M5 5h14v14H5zM9 9h6M9 13h6",
     orders: "M6 4h12l1 16H5L6 4ZM9 8h6",
     library: "M5 5h5v14H5zM14 5h5v14h-5z",
-    people: "M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a5 5 0 0 1 10 0M17 11a3 3 0 1 0 0-6M15 20h6a5 5 0 0 0-3-4.6",
+    people:
+      "M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a5 5 0 0 1 10 0M17 11a3 3 0 1 0 0-6M15 20h6a5 5 0 0 0-3-4.6",
     reports: "M5 19V9M12 19V5M19 19v-7",
-    events: "M5 8h14l-1 11H6L5 8Zm3 0V6a4 4 0 0 1 8 0v2",
-    money: "M12 6v12M9 9.5c0-1.1 1.3-2 3-2s3 .9 3 2-1.3 2-3 2-3 .9-3 2 1.3 2 3 2 3-.9 3-2",
+    // a wrapped gift
+    events: "M4.5 11h15v9h-15zM3.5 7.5h17V11h-17zM12 7.5V20",
+    // a banknote
+    money: "M3 7.5h18v9H3zM14.5 12a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0",
   };
+
   return (
     <svg
       viewBox="0 0 24 24"

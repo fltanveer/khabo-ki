@@ -303,6 +303,7 @@ export const bn: Dictionary = {
   },
 
   events: {
+    treatShort: "ট্রিট",
     nobodyIn: "এখনো কেউ হ্যাঁ বলেননি।",
     outCount: "{count} জন যাচ্ছেন না",
     waitingCount: "{count} জন উত্তর দেননি",
