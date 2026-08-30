@@ -5,6 +5,8 @@ import { getI18n } from "@/lib/i18n/server";
 import { fill, itemName } from "@/lib/i18n";
 import { Badge, Card, Empty, PageHeader } from "@/components/ui";
 import { MenuPicker, type PickableItem } from "./MenuPicker";
+import { GuestMeals, type MyGuestMeal } from "./GuestMeals";
+import { EventBanner } from "./EventBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,8 @@ export default async function EmployeeToday() {
     );
   }
 
-  const [{ data: menuItems }, { data: bans }, { data: order }] = await Promise.all([
+  const [{ data: menuItems }, { data: bans }, { data: order }, { data: guestRows }] =
+    await Promise.all([
     supabase
       .from("daily_menu_items")
       .select("item_id, items(id, name, name_bn, sort_order)")
@@ -42,7 +45,18 @@ export default async function EmployeeToday() {
       .eq("daily_menu_id", menu.id)
       .eq("employee_id", profile.id)
       .maybeSingle(),
+    supabase
+      .from("guest_meals")
+      .select("id, host_id, quantity, guest_label, unit_price_bdt, items(name, name_bn)")
+      .eq("daily_menu_id", menu.id)
+      .order("created_at"),
   ]);
+
+  // Every guest meal in the office, not just this employee's — the whole point
+  // is that people can see a guest is coming.
+  const guests = (guestRows ?? []) as unknown as (MyGuestMeal & { host_id: string })[];
+  const myGuests = guests.filter((g) => g.host_id === profile.id);
+  const officeGuestCount = guests.reduce((sum, g) => sum + g.quantity, 0);
 
   const bannedIds = new Set((bans ?? []).map((b) => b.item_id));
   const all = (menuItems ?? [])
@@ -59,6 +73,8 @@ export default async function EmployeeToday() {
 
   return (
     <>
+      <EventBanner />
+
       <PageHeader
         title={t.employee.title}
         subtitle={formatDate(menuDate, lang)}
@@ -111,6 +127,16 @@ export default async function EmployeeToday() {
           cutoff={cutoff}
         />
       )}
+
+      <div className="mt-7">
+        <GuestMeals
+          menuId={menu.id}
+          items={items}
+          mine={myGuests}
+          open={open}
+          officeCount={officeGuestCount}
+        />
+      </div>
 
       {hiddenCount > 0 && (
         <p className="mt-4 text-sm text-muted">

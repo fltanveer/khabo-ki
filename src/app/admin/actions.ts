@@ -99,6 +99,23 @@ export async function deleteUser(userId: string): Promise<Result> {
   if (userId === admin.id) return { error: "self_delete" };
 
   const supabase = await createClient();
+
+  // Deleting cascades their orders away, and their meal bill is derived from
+  // those orders — so a delete would silently wipe money the office is still
+  // owed. Deactivate keeps the record; delete has to wait until it is settled.
+  const [{ data: bills }, { data: paid }] = await Promise.all([
+    supabase.from("meal_bills").select("amount_bdt").eq("employee_id", userId),
+    supabase
+      .from("payments")
+      .select("amount_bdt")
+      .eq("payer_id", userId)
+      .not("meal_month", "is", null)
+      .not("confirmed_at", "is", null),
+  ]);
+
+  const billed = (bills ?? []).reduce((sum, row) => sum + row.amount_bdt, 0);
+  const settled = (paid ?? []).reduce((sum, row) => sum + row.amount_bdt, 0);
+  if (billed - settled > 0) return { error: "owes_money" };
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return { error: "session_expired" };

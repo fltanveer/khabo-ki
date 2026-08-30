@@ -88,3 +88,50 @@ export async function savePickRules(itemIds: string[]): Promise<ActionResult> {
   revalidatePath("/employee/preferences");
   return {};
 }
+
+// Guests eat on the host's tab but pick their own dish. RLS is what enforces
+// "before cutoff, on today's menu" — deliberately not the host's ban list, since
+// a guest may well want the thing the host never eats.
+export async function addGuestMeal(
+  menuId: string,
+  itemId: string,
+  quantity: number,
+  label: string,
+): Promise<ActionResult> {
+  const profile = await requireRole("employee");
+  const supabase = await createClient();
+
+  const count = Math.min(Math.max(Math.trunc(quantity) || 1, 1), 20);
+  const name = label.trim();
+
+  const { error } = await supabase.from("guest_meals").insert({
+    host_id: profile.id,
+    daily_menu_id: menuId,
+    item_id: itemId,
+    quantity: count,
+    guest_label: name.length > 0 ? name.slice(0, 60) : null,
+  });
+
+  if (error) return { error: "guest_add_failed" };
+
+  revalidatePath("/employee");
+  revalidatePath("/employee/money");
+  return {};
+}
+
+export async function removeGuestMeal(guestMealId: string): Promise<ActionResult> {
+  const profile = await requireRole("employee");
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("guest_meals")
+    .delete()
+    .eq("id", guestMealId)
+    .eq("host_id", profile.id);
+
+  if (error) return { error: "guest_remove_failed" };
+
+  revalidatePath("/employee");
+  revalidatePath("/employee/money");
+  return {};
+}

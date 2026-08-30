@@ -19,6 +19,17 @@ export type ErrorCode =
   | "self_deactivate"
   | "self_delete"
   | "delete_failed"
+  | "owes_money"
+  | "guest_add_failed"
+  | "guest_remove_failed"
+  | "event_failed"
+  | "invalid_title"
+  | "invalid_date"
+  | "invalid_total"
+  | "pay_failed"
+  | "amount_too_big"
+  | "invalid_amount"
+  | "no_admin"
   | "generic";
 
 export type ActionResult = { error?: ErrorCode; orphaned?: number };

@@ -28,6 +28,71 @@ export type DailyMenu = {
   published_at: string | null;
 };
 
+export type GuestMeal = {
+  id: string;
+  host_id: string;
+  daily_menu_id: string;
+  item_id: string;
+  quantity: number;
+  guest_label: string | null;
+  unit_price_bdt: number;
+  created_at: string;
+};
+
+export type CostMode = "treat" | "shared";
+export type EventStatus = "announced" | "settled" | "cancelled";
+export type Rsvp = "pending" | "in" | "out";
+
+export type OfficeEvent = {
+  id: string;
+  created_by: string;
+  collector_id: string;
+  title: string;
+  details: string | null;
+  event_at: string;
+  cost_mode: CostMode;
+  total_amount_bdt: number | null;
+  status: EventStatus;
+  created_at: string;
+};
+
+export type EventParticipant = {
+  event_id: string;
+  employee_id: string;
+  rsvp: Rsvp;
+  custom_amount_bdt: number | null;
+  responded_at: string | null;
+};
+
+export type Payment = {
+  id: string;
+  payer_id: string;
+  payee_id: string;
+  amount_bdt: number;
+  method: "cash" | "qr";
+  event_id: string | null;
+  meal_month: string | null;
+  note: string | null;
+  claimed_at: string;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+};
+
+export type PaymentDetails = {
+  employee_id: string;
+  provider: "bkash" | "nagad" | "rocket" | "other" | null;
+  number: string | null;
+  qr_image: string | null;
+};
+
+export type MealBill = {
+  employee_id: string;
+  month: string;
+  own_meals: number;
+  guest_meals: number;
+  amount_bdt: number;
+};
+
 export type Order = {
   id: string;
   employee_id: string;
@@ -35,6 +100,7 @@ export type Order = {
   item_id: string;
   source: "manual" | "auto";
   picked_at: string;
+  unit_price_bdt: number;
 };
 
 export type PasswordReset = {

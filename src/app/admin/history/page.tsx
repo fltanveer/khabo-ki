@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchHistory, readFilters } from "@/lib/history";
+import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
 import { fill, formatNumber, itemName } from "@/lib/i18n";
@@ -125,6 +126,9 @@ export default async function AdminHistory({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{row.items ? itemName(row.items, lang) : "—"}</span>
+                    <span className="text-sm tabular-nums text-muted">
+                      {formatMoney(row.unit_price_bdt, lang)}
+                    </span>
                     {row.source === "auto" && <Badge>{t.employee.auto}</Badge>}
                   </div>
                 </Row>
@@ -140,6 +144,7 @@ export default async function AdminHistory({
                     <th className="px-5 py-3 font-medium">{t.admin.date}</th>
                     <th className="px-5 py-3 font-medium">{t.admin.employee}</th>
                     <th className="px-5 py-3 font-medium">{t.admin.dish}</th>
+                    <th className="px-5 py-3 font-medium">{t.settlement.price}</th>
                     <th className="px-5 py-3 font-medium">{t.admin.source}</th>
                   </tr>
                 </thead>
@@ -151,6 +156,9 @@ export default async function AdminHistory({
                       </td>
                       <td className="px-5 py-3">{row.profiles?.name ?? "—"}</td>
                       <td className="px-5 py-3">{row.items ? itemName(row.items, lang) : "—"}</td>
+                      <td className="px-5 py-3 tabular-nums">
+                        {formatMoney(row.unit_price_bdt, lang)}
+                      </td>
                       <td className="px-5 py-3 text-muted">{row.source}</td>
                     </tr>
                   ))}

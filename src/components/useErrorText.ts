@@ -27,6 +27,17 @@ export function useErrorText(): (code?: ErrorCode) => string {
       self_deactivate: t.admin.cannotSelfDeactivate,
       self_delete: t.admin.cannotSelfDelete,
       delete_failed: t.admin.deleteFailed,
+      owes_money: t.admin.owesMoney,
+      guest_add_failed: t.guests.addFailed,
+      guest_remove_failed: t.guests.removeFailed,
+      event_failed: t.events.saveFailed,
+      invalid_title: t.events.invalidTitle,
+      invalid_date: t.events.invalidDate,
+      invalid_total: t.events.invalidTotal,
+      pay_failed: t.money.payFailed,
+      amount_too_big: t.money.amountTooBig,
+      invalid_amount: t.money.invalidAmount,
+      no_admin: t.money.noAdmin,
       generic: t.employee.saveFailed,
     };
     return map[code] ?? t.employee.saveFailed;

@@ -7,7 +7,17 @@ import type { Profile, Role } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
 import { LangToggle, ThemeToggle } from "./Toggles";
 
-type Icon = "today" | "prefs" | "history" | "menu" | "orders" | "library" | "people" | "reports";
+type Icon =
+  | "today"
+  | "prefs"
+  | "history"
+  | "menu"
+  | "orders"
+  | "library"
+  | "people"
+  | "reports"
+  | "events"
+  | "money";
 
 function NavIcon({ name }: { name: Icon }) {
   const paths: Record<Icon, ReturnType<typeof String>> = {
@@ -19,6 +29,8 @@ function NavIcon({ name }: { name: Icon }) {
     library: "M5 5h5v14H5zM14 5h5v14h-5z",
     people: "M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a5 5 0 0 1 10 0M17 11a3 3 0 1 0 0-6M15 20h6a5 5 0 0 0-3-4.6",
     reports: "M5 19V9M12 19V5M19 19v-7",
+    events: "M5 8h14l-1 11H6L5 8Zm3 0V6a4 4 0 0 1 8 0v2",
+    money: "M12 6v12M9 9.5c0-1.1 1.3-2 3-2s3 .9 3 2-1.3 2-3 2-3 .9-3 2 1.3 2 3 2 3-.9 3-2",
   };
   return (
     <svg
@@ -43,8 +55,9 @@ function useNav(role: Role): NavItem[] {
   if (role === "employee") {
     return [
       { href: "/employee", key: "today", label: t.nav.today },
+      { href: "/employee/events", key: "events", label: t.nav.events },
+      { href: "/employee/money", key: "money", label: t.nav.money },
       { href: "/employee/preferences", key: "prefs", label: t.nav.preferences },
-      { href: "/employee/history", key: "history", label: t.nav.history },
     ];
   }
   if (role === "staff") {
@@ -56,6 +69,7 @@ function useNav(role: Role): NavItem[] {
   }
   return [
     { href: "/admin", key: "people", label: t.nav.people },
+    { href: "/admin/money", key: "money", label: t.nav.money },
     { href: "/admin/history", key: "reports", label: t.nav.reports },
   ];
 }
@@ -110,6 +124,12 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
           <span className="text-muted">
             {profile.name} · {t.roles[profile.role]}
           </span>
+          <Link
+            href="/settings/payment"
+            className="text-muted underline-offset-2 hover:text-ink hover:underline"
+          >
+            {t.payment.title}
+          </Link>
           <form action={signOut}>
             <button
               type="submit"
