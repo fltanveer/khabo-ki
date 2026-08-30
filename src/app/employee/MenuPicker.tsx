@@ -24,36 +24,58 @@ export function MenuPicker({
   currentItemId,
   source,
   open,
+  cutoff,
 }: {
   menuId: string;
   items: PickableItem[];
   currentItemId: string | null;
   source: "manual" | "auto" | null;
   open: boolean;
+  cutoff: string;
 }) {
-  const { t, dish } = useI18n();
+  const { t, f, dish } = useI18n();
   const errorText = useErrorText();
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  // useOptimistic holds the tapped value until the refreshed server props
-  // arrive, then hands over in the same commit. Clearing it by hand instead
-  // left a frame where the stale prop showed through, which read as the
-  // selection flicking back to the previous dish.
-  const [selectedId, setSelectedId] = useOptimistic(
+  // What the server has stored. useOptimistic holds the new value until the
+  // refreshed props arrive, so the row never flicks back mid-commit.
+  const [confirmedId, setConfirmedId] = useOptimistic(
     currentItemId,
     (_current, next: string | null) => next,
   );
 
-  function choose(itemId: string) {
+  // Tapping a dish only stages it; nothing is ordered until Confirm. null here
+  // means "no local change", which is different from a staged clear.
+  const [draft, setDraft] = useState<{ id: string | null } | null>(null);
+
+  const selectedId = draft ? draft.id : confirmedId;
+  const dirty = selectedId !== confirmedId;
+
+  function tap(itemId: string) {
     if (!open) return;
     setError("");
-    const clearing = itemId === selectedId;
+    setDraft({ id: itemId === selectedId ? null : itemId });
+  }
 
+  function confirm() {
+    setError("");
+    const next = selectedId;
     startTransition(async () => {
-      setSelectedId(clearing ? null : itemId);
-      const result = clearing ? await clearPick(menuId) : await pickItem(menuId, itemId);
+      setConfirmedId(next);
+      const result = next === null ? await clearPick(menuId) : await pickItem(menuId, next);
       if (result.error) setError(errorText(result.error));
+      setDraft(null);
+    });
+  }
+
+  function clear() {
+    setError("");
+    startTransition(async () => {
+      setConfirmedId(null);
+      const result = await clearPick(menuId);
+      if (result.error) setError(errorText(result.error));
+      setDraft(null);
     });
   }
 
@@ -64,16 +86,19 @@ export function MenuPicker({
       <ul className="grid gap-2.5 sm:grid-cols-2">
         {items.map((item) => {
           const selected = item.id === selectedId;
+          const staged = selected && dirty;
           return (
             <li key={item.id}>
               <button
                 type="button"
                 disabled={!open}
                 aria-pressed={selected}
-                onClick={() => choose(item.id)}
+                onClick={() => tap(item.id)}
                 className={`flex w-full items-center justify-between gap-3 rounded-card border px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-60 ${
                   selected
-                    ? "border-brand bg-brand-soft"
+                    ? staged
+                      ? "border-brand border-dashed bg-brand-soft"
+                      : "border-brand bg-brand-soft"
                     : "border-line-strong bg-surface hover:border-brand"
                 }`}
               >
@@ -82,7 +107,7 @@ export function MenuPicker({
                 </span>
                 {selected ? (
                   <span className="flex items-center gap-2">
-                    {source === "auto" && selectedId === currentItemId && (
+                    {source === "auto" && !dirty && (
                       <Badge tone="brand">{t.employee.autoPicked}</Badge>
                     )}
                     <Check />
@@ -96,10 +121,34 @@ export function MenuPicker({
         })}
       </ul>
 
-      {open && selectedId && (
-        <Button variant="ghost" size="sm" disabled={pending} onClick={() => choose(selectedId)}>
-          {t.employee.clearPick}
-        </Button>
+      {open && (dirty || confirmedId) && (
+        <div
+          className="fixed inset-x-0 bottom-[4.25rem] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-md md:static md:mt-5 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-4xl items-center gap-3">
+            {dirty ? (
+              <>
+                <span className="min-w-0 flex-1 text-sm text-muted">{t.employee.unconfirmed}</span>
+                <Button disabled={pending} onClick={confirm}>
+                  {pending ? t.employee.confirming : t.employee.confirmOrder}
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <Badge tone="good">{t.employee.orderConfirmed}</Badge>
+                  <span className="text-xs text-muted">
+                    {f(t.employee.changeHint, { time: cutoff })}
+                  </span>
+                </span>
+                <Button variant="secondary" size="sm" disabled={pending} onClick={clear}>
+                  {t.employee.clearPick}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

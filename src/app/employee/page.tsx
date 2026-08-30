@@ -108,6 +108,7 @@ export default async function EmployeeToday() {
           currentItemId={order?.item_id ?? null}
           source={(order?.source as "manual" | "auto" | undefined) ?? null}
           open={open}
+          cutoff={cutoff}
         />
       )}
 
