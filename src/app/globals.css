@@ -70,6 +70,14 @@
   line-height: 1.8;
 }
 
+/* leading-tight is set for Latin caps and clips Bengali ascenders off the top
+   of a heading. Give headings room to breathe instead. */
+:root[lang="bn"] h1,
+:root[lang="bn"] h2,
+:root[lang="bn"] h3 {
+  line-height: 1.5;
+}
+
 :root[data-theme="dark"] {
   --bg: oklch(0.175 0.006 260);
   --surface: oklch(0.212 0.007 260);

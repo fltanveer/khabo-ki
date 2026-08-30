@@ -37,6 +37,16 @@ export type Order = {
   picked_at: string;
 };
 
+export type PasswordReset = {
+  id: string;
+  user_id: string;
+  status: "pending" | "approved" | "used" | "denied";
+  code: string | null;
+  requested_at: string;
+  expires_at: string | null;
+  profile: { name: string; phone: string; role: Role } | null;
+};
+
 export const HOME_FOR_ROLE: Record<Role, string> = {
   admin: "/admin",
   staff: "/staff",

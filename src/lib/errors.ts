@@ -11,6 +11,10 @@ export type ErrorCode =
   | "duplicate_dish"
   | "dish_name_too_short"
   | "session_expired"
+  | "reset_refused"
+  | "reset_expired"
+  | "reset_locked"
+  | "reset_failed"
   | "self_deactivate"
   | "generic";
 

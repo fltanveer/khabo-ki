@@ -67,6 +67,14 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <div className="text-right">
+            <Link
+              href="/forgot"
+              className="text-sm text-muted underline underline-offset-2 hover:text-ink"
+            >
+              {t.reset.link}
+            </Link>
+          </div>
           <Notice>{error}</Notice>
           <Button type="submit" disabled={busy} block>
             {busy ? t.common.signingIn : t.common.signIn}

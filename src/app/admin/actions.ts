@@ -64,3 +64,28 @@ export async function createUser(
   revalidatePath("/admin");
   return { created: true };
 }
+
+// Password resets. Approving mints a six digit code the admin reads out to the
+// person — that spoken hand-off is what ties the request to a real human, so
+// the code is shown only here, to admins.
+export async function approveReset(requestId: string): Promise<Result> {
+  await requireRole("admin");
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("approve_password_reset", { p_id: requestId });
+  if (error) return { error: "reset_failed" };
+
+  revalidatePath("/admin");
+  return {};
+}
+
+export async function denyReset(requestId: string): Promise<Result> {
+  await requireRole("admin");
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("deny_password_reset", { p_id: requestId });
+  if (error) return { error: "reset_failed" };
+
+  revalidatePath("/admin");
+  return {};
+}

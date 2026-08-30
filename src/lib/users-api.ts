@@ -4,11 +4,13 @@
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/users`;
 
 type Payload = {
-  action: "register" | "create";
-  name: string;
+  action: "register" | "create" | "reset_password";
+  // A reset carries no name — the account already exists.
+  name?: string;
   phone: string;
   password: string;
   role?: "staff" | "admin";
+  code?: string;
 };
 
 export async function callUsersFunction(
@@ -34,6 +36,6 @@ export async function callUsersFunction(
   }
 
   const body = (await response.json().catch(() => ({}))) as { error?: string };
-  if (!response.ok) return { error: body.error ?? "Couldn't create the account." };
+  if (!response.ok) return { error: body.error ?? "That didn't work. Try again." };
   return {};
 }

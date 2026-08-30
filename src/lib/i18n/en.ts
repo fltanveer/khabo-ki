@@ -182,6 +182,16 @@ export const en = {
     cannotSelfDeactivate: "You can't deactivate your own account.",
     sessionExpired: "Your session expired. Sign in again.",
 
+    resetsTitle: "Password reset requests",
+    resetsBody:
+      "Approve only if you know the person asked. Read the code out to them — don't post it in a group.",
+    noResets: "No reset requests.",
+    resetCode: "Code:",
+    resetExpires: "Expires {time}",
+    resetApproved: "approved",
+    resetNewCode: "New code",
+    resetDeny: "Dismiss",
+
     historyTitle: "Order history",
     historyCount: "{count} orders match these filters.",
     exportCsv: "Export CSV",
@@ -195,6 +205,28 @@ export const en = {
     noMatches: "No orders match those filters.",
     date: "Date",
     source: "Source",
+  },
+
+  reset: {
+    link: "Forgot password?",
+    title: "Reset your password",
+    askSubtitle: "No email needed. Ask an admin to approve, then set a new password here.",
+    codeSubtitle: "Enter the code your admin gave you and pick a new password.",
+    askButton: "Ask admin to reset",
+    asking: "Sending…",
+    askedBody:
+      "Request sent. Ask your admin to approve it — they'll give you a 6-digit code.",
+    haveCode: "I already have a code",
+    askAgain: "Send a new request",
+    code: "Code from your admin",
+    newPassword: "New password",
+    changeButton: "Change password",
+    doneTitle: "Password changed",
+    doneBody: "Sign in with your new password.",
+    refused: "No approved reset for that number, or the code is wrong.",
+    expired: "That code has expired. Ask your admin again.",
+    locked: "Too many wrong tries. Ask your admin to approve a new request.",
+    failed: "That didn't work. Try again.",
   },
 };
 

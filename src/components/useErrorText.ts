@@ -19,6 +19,10 @@ export function useErrorText(): (code?: ErrorCode) => string {
       duplicate_dish: t.staff.duplicate,
       dish_name_too_short: t.staff.nameTooShort,
       session_expired: t.admin.sessionExpired,
+      reset_refused: t.reset.refused,
+      reset_expired: t.reset.expired,
+      reset_locked: t.reset.locked,
+      reset_failed: t.reset.failed,
       self_deactivate: t.admin.cannotSelfDeactivate,
       generic: t.employee.saveFailed,
     };
