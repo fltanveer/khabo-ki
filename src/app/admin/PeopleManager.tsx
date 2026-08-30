@@ -62,7 +62,10 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
             </p>
           </div>
           {/* Status rides with the name on a phone; the buttons get their own row. */}
-          <Badge tone={TONE[person.status]}>{t.status[person.status]}</Badge>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {person.is_test && <Badge tone="brand">{t.admin.testAccount}</Badge>}
+            <Badge tone={TONE[person.status]}>{t.status[person.status]}</Badge>
+          </div>
         </div>
 
         {isConfirming ? (

@@ -10,6 +10,7 @@ export type Profile = {
   approved_by: string | null;
   approved_at: string | null;
   created_at: string;
+  is_test: boolean;
 };
 
 export type Item = {

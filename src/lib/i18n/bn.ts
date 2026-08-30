@@ -170,6 +170,7 @@ export const bn: Dictionary = {
   },
 
   admin: {
+    testAccount: "টেস্ট",
     peopleTitle: "সদস্য",
     peopleSubtitle: "রেজিস্ট্রেশন অনুমোদন ও অ্যাকাউন্ট ব্যবস্থাপনা।",
     waiting: "অনুমোদনের অপেক্ষায়",

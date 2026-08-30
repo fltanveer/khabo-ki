@@ -169,6 +169,7 @@ export const en = {
   },
 
   admin: {
+    testAccount: "test",
     peopleTitle: "People",
     peopleSubtitle: "Approve registrations and manage accounts.",
     waiting: "Waiting for approval",

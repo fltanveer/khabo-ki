@@ -80,6 +80,7 @@ export default async function StaffOrders({
       .select("id, name, phone")
       .eq("role", "employee")
       .eq("status", "active")
+      .eq("is_test", false)
       .order("name"),
     supabase
       .from("guest_meals")
