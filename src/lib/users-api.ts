@@ -15,10 +15,15 @@ type Payload = {
   code?: string;
 };
 
+// `network` marks a failure that never reached the function — the request
+// didn't go out, or the host answered with something that wasn't ours. It
+// says nothing about the account, so callers must not report it as one.
+export type UsersApiResult = { error?: string; network?: boolean };
+
 export async function callUsersFunction(
   payload: Payload,
   accessToken?: string,
-): Promise<{ error?: string }> {
+): Promise<UsersApiResult> {
   let response: Response;
 
   try {
@@ -34,10 +39,14 @@ export async function callUsersFunction(
       body: JSON.stringify(payload),
     });
   } catch {
-    return { error: "Couldn't reach the server. Try again." };
+    return { error: "Couldn't reach the server. Try again.", network: true };
   }
 
   const body = (await response.json().catch(() => ({}))) as { error?: string };
-  if (!response.ok) return { error: body.error ?? "That didn't work. Try again." };
-  return {};
+  if (response.ok) return {};
+
+  // No error body means the response didn't come from the function — a proxy
+  // error page, a deploy in flight, a gateway timeout.
+  if (!body.error) return { error: "That didn't work. Try again.", network: true };
+  return { error: body.error };
 }

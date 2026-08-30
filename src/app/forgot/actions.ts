@@ -31,7 +31,7 @@ export async function resetPassword(
   if (!/^\d{6}$/.test(code.trim())) return { error: "reset_refused" };
   if (password.length < 8) return { error: "short_password" };
 
-  const { error } = await callUsersFunction({
+  const { error, network } = await callUsersFunction({
     action: "reset_password",
     phone: normalizePhone(phone),
     code: code.trim(),
@@ -39,6 +39,7 @@ export async function resetPassword(
   });
 
   if (!error) return {};
+  if (network) return { error: "network" };
 
   const message = error.toLowerCase();
   if (message.includes("expired")) return { error: "reset_expired" };

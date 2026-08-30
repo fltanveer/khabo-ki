@@ -55,10 +55,11 @@ export async function createUser(
   const token = data.session?.access_token;
   if (!token) return { error: "session_expired" };
 
-  const { error } = await callUsersFunction(
+  const { error, network } = await callUsersFunction(
     { action: "create", name, phone, password, role },
     token,
   );
+  if (network) return { error: "network" };
   if (error) return { error: error.toLowerCase().includes("already") ? "taken" : "create_failed" };
 
   revalidatePath("/admin");
@@ -102,7 +103,8 @@ export async function deleteUser(userId: string): Promise<Result> {
   const token = data.session?.access_token;
   if (!token) return { error: "session_expired" };
 
-  const { error } = await callUsersFunction({ action: "delete", userId }, token);
+  const { error, network } = await callUsersFunction({ action: "delete", userId }, token);
+  if (network) return { error: "network" };
   if (error) {
     const message = error.toLowerCase();
     if (message.includes("your own")) return { error: "self_delete" };

@@ -6,6 +6,7 @@ export type ErrorCode =
   | "short_password"
   | "taken"
   | "create_failed"
+  | "network"
   | "pick_failed"
   | "clear_failed"
   | "duplicate_dish"

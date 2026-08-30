@@ -49,6 +49,8 @@ export const en = {
     invalidName: "Enter your full name.",
     shortPassword: "Password must be at least 8 characters.",
     phoneTaken: "That phone number is already registered.",
+    createFailed: "Couldn't create the account. Try again.",
+    offline: "Couldn't reach the server. Check your connection and try again.",
   },
 
   nav: {
