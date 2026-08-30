@@ -16,6 +16,8 @@ export type ErrorCode =
   | "reset_locked"
   | "reset_failed"
   | "self_deactivate"
+  | "self_delete"
+  | "delete_failed"
   | "generic";
 
 export type ActionResult = { error?: ErrorCode; orphaned?: number };

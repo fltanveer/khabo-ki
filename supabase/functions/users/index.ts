@@ -115,6 +115,48 @@ async function resetPassword(phone: string, code: string, password: string) {
   return null;
 }
 
+
+// Resolves the caller's own profile, and only if they are an active admin.
+async function callingAdmin(req: Request): Promise<{ id: string } | null> {
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+
+  const admin = serviceClient();
+  const { data: caller, error } = await admin.auth.getUser(token);
+  if (error || !caller?.user) return null;
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role, status")
+    .eq("id", caller.user.id)
+    .single();
+
+  if (!profile || profile.role !== "admin" || profile.status !== "active") return null;
+  return { id: caller.user.id };
+}
+
+async function deleteAccount(callerId: string, userId: string) {
+  if (!userId) return "Pick someone to delete.";
+  if (userId === callerId) return "You can't delete your own account.";
+
+  const admin = serviceClient();
+
+  const { data: target } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!target) return "That account no longer exists.";
+
+  // No "last admin" check: the caller is always an active admin, so if the
+  // target were the only one, this would already have been a self-delete.
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return "Couldn't delete that account. Try again.";
+  return null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -134,6 +176,17 @@ Deno.serve(async (req: Request) => {
     return error ? json({ error }, 400) : json({ ok: true });
   }
 
+  // Privileged path: removing an account for good. Cascades take their orders,
+  // bans and pick rules with them, which is the difference between this and
+  // deactivating someone.
+  if (action === "delete") {
+    const caller = await callingAdmin(req);
+    if (!caller) return json({ error: "Not authorised." }, 403);
+
+    const error = await deleteAccount(caller.id, body.userId);
+    return error ? json({ error }, 400) : json({ ok: true });
+  }
+
   const invalid = validate(name, phone, password);
   if (invalid) return json({ error: invalid }, 400);
 
@@ -146,27 +199,10 @@ Deno.serve(async (req: Request) => {
 
   // Privileged path: caller must present a JWT belonging to an active admin.
   if (action === "create") {
+    const caller = await callingAdmin(req);
+    if (!caller) return json({ error: "Not authorised." }, 403);
+
     const role = body.role === "admin" ? "admin" : "staff";
-
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return json({ error: "Not authorised." }, 401);
-
-    const admin = serviceClient();
-
-    const { data: caller, error: authError } = await admin.auth.getUser(token);
-    if (authError || !caller?.user) return json({ error: "Not authorised." }, 401);
-
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("role, status")
-      .eq("id", caller.user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin" || profile.status !== "active") {
-      return json({ error: "Not authorised." }, 403);
-    }
-
     const error = await createAccount(name, phone, password, role);
     return error ? json({ error }, 400) : json({ ok: true });
   }

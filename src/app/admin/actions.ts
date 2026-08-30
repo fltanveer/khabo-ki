@@ -89,3 +89,26 @@ export async function denyReset(requestId: string): Promise<Result> {
   revalidatePath("/admin");
   return {};
 }
+
+// Hard delete. Cascades take the person's orders, bans and pick rules with
+// them — deactivate is the option that keeps the history. The edge function
+// re-checks that the caller is an active admin and refuses self-deletes.
+export async function deleteUser(userId: string): Promise<Result> {
+  const admin = await requireRole("admin");
+  if (userId === admin.id) return { error: "self_delete" };
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "session_expired" };
+
+  const { error } = await callUsersFunction({ action: "delete", userId }, token);
+  if (error) {
+    const message = error.toLowerCase();
+    if (message.includes("your own")) return { error: "self_delete" };
+    return { error: "delete_failed" };
+  }
+
+  revalidatePath("/admin");
+  return {};
+}

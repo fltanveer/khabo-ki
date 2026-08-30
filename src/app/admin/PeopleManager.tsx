@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { approveUser, createUser, setUserStatus } from "./actions";
+import { approveUser, createUser, deleteUser, setUserStatus } from "./actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
 import { Badge, Button, Card, Empty, Input, List, Notice, Row, Section, Select } from "@/components/ui";
@@ -18,6 +18,9 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
   const errorText = useErrorText();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  // Delete asks once, inline. A browser confirm() is easy to fat-finger past
+  // on a phone, and this is the one action here that can't be undone.
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -43,45 +46,110 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
   }
 
   function personRow(person: Profile) {
+    const isSelf = person.id === selfId;
+    const isConfirming = confirming === person.id;
+
     return (
-      <Row key={person.id}>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">
-            {person.name}
-            {person.id === selfId && <span className="text-muted"> ({t.admin.you})</span>}
-          </p>
-          <p className="mt-0.5 text-xs text-muted">
-            {person.phone} · {t.roles[person.role]}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <Row key={person.id} className="flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">
+              {person.name}
+              {isSelf && <span className="text-muted"> ({t.admin.you})</span>}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-muted">
+              {person.phone} · {t.roles[person.role]}
+            </p>
+          </div>
+          {/* Status rides with the name on a phone; the buttons get their own row. */}
           <Badge tone={TONE[person.status]}>{t.status[person.status]}</Badge>
-          {person.status === "pending" && (
-            <Button size="sm" disabled={pending} onClick={() => run(() => approveUser(person.id))}>
-              {t.admin.approve}
-            </Button>
-          )}
-          {person.status === "active" && person.id !== selfId && (
-            <Button
-              variant="danger"
-              size="sm"
-              disabled={pending}
-              onClick={() => run(() => setUserStatus(person.id, "inactive"))}
-            >
-              {t.admin.deactivate}
-            </Button>
-          )}
-          {person.status === "inactive" && (
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-              onClick={() => run(() => setUserStatus(person.id, "active"))}
-            >
-              {t.admin.reactivate}
-            </Button>
-          )}
         </div>
+
+        {isConfirming ? (
+          <div className="sm:shrink-0">
+            <p className="mb-2 text-xs leading-relaxed text-bad sm:text-right">
+              {f(t.admin.deleteConfirm, { name: person.name })}
+            </p>
+            <div className="flex gap-2 sm:justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() => setConfirming(null)}
+              >
+                {t.common.cancel}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    () => deleteUser(person.id),
+                    () => {
+                      setConfirming(null);
+                      setMessage(f(t.admin.deleted, { name: person.name }));
+                    },
+                  )
+                }
+              >
+                {t.admin.deleteYes}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2 sm:shrink-0">
+            {person.status === "pending" && (
+              <Button
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() => run(() => approveUser(person.id))}
+              >
+                {t.admin.approve}
+              </Button>
+            )}
+            {person.status === "active" && !isSelf && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() => run(() => setUserStatus(person.id, "inactive"))}
+              >
+                {t.admin.deactivate}
+              </Button>
+            )}
+            {person.status === "inactive" && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() => run(() => setUserStatus(person.id, "active"))}
+              >
+                {t.admin.activate}
+              </Button>
+            )}
+            {!isSelf && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={pending}
+                onClick={() => {
+                  setError("");
+                  setMessage("");
+                  setConfirming(person.id);
+                }}
+              >
+                {t.admin.delete}
+              </Button>
+            )}
+          </div>
+        )}
       </Row>
     );
   }
@@ -142,7 +210,7 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
             </Select>
           </div>
           <Button
-            className="mt-4"
+            className="mt-4 w-full sm:w-auto"
             disabled={pending}
             onClick={() =>
               run(

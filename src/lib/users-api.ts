@@ -4,11 +4,13 @@
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/users`;
 
 type Payload = {
-  action: "register" | "create" | "reset_password";
+  action: "register" | "create" | "reset_password" | "delete";
   // A reset carries no name — the account already exists.
   name?: string;
-  phone: string;
-  password: string;
+  // A delete carries neither: the account is named by id.
+  phone?: string;
+  password?: string;
+  userId?: string;
   role?: "staff" | "admin";
   code?: string;
 };

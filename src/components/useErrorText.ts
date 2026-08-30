@@ -24,6 +24,8 @@ export function useErrorText(): (code?: ErrorCode) => string {
       reset_locked: t.reset.locked,
       reset_failed: t.reset.failed,
       self_deactivate: t.admin.cannotSelfDeactivate,
+      self_delete: t.admin.cannotSelfDelete,
+      delete_failed: t.admin.deleteFailed,
       generic: t.employee.saveFailed,
     };
     return map[code] ?? t.employee.saveFailed;

@@ -172,6 +172,13 @@ export const en = {
     approve: "Approve",
     deactivate: "Deactivate",
     reactivate: "Reactivate",
+    activate: "Activate",
+    delete: "Delete",
+    deleteConfirm: "Delete {name}? Their past orders go too.",
+    deleteYes: "Yes, delete",
+    deleted: "{name} deleted.",
+    cannotSelfDelete: "You can't delete your own account.",
+    deleteFailed: "Couldn't delete that account. Try again.",
     you: "you",
     createTitle: "Create a staff or admin account",
     createBody:

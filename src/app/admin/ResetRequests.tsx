@@ -39,7 +39,10 @@ export function ResetRequests({ requests }: { requests: PasswordReset[] }) {
       ) : (
         <List>
           {requests.map((request) => (
-            <Row key={request.id}>
+            <Row
+              key={request.id}
+              className="flex-col items-stretch gap-2.5 sm:flex-row sm:items-center"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">
                   {request.profile?.name ?? "—"}
@@ -68,10 +71,11 @@ export function ResetRequests({ requests }: { requests: PasswordReset[] }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:shrink-0">
                 {request.status === "approved" && <Badge tone="good">{t.admin.resetApproved}</Badge>}
                 <Button
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   disabled={pending}
                   onClick={() => run(() => approveReset(request.id))}
                 >
@@ -80,6 +84,7 @@ export function ResetRequests({ requests }: { requests: PasswordReset[] }) {
                 <Button
                   variant="danger"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   disabled={pending}
                   onClick={() => run(() => denyReset(request.id))}
                 >

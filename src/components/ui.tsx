@@ -84,7 +84,10 @@ export function Button({
   ...props
 }: ButtonProps) {
   // 44px minimum height on mobile — anything smaller is a miss-tap magnet.
-  const sizing = size === "sm" ? "min-h-9 px-3 text-sm" : "min-h-11 px-4 text-sm sm:min-h-10";
+  // That goes for the small size too: on a phone it carries row actions like
+  // Delete, where a mis-tap is expensive. It shrinks back on a real pointer.
+  const sizing =
+    size === "sm" ? "min-h-11 px-3 text-sm sm:min-h-9" : "min-h-11 px-4 text-sm sm:min-h-10";
   return (
     <button
       {...props}
