@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchHistory, readFilters } from "@/lib/history";
 import { formatMoney } from "@/lib/money";
+import { shownName } from "@/lib/names";
 import { formatDate } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
 import { fill, formatNumber, itemName } from "@/lib/i18n";
@@ -119,7 +120,7 @@ export default async function AdminHistory({
               {rows.map((row) => (
                 <Row key={row.id}>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{row.profiles?.name ?? "—"}</p>
+                    <p className="truncate text-sm font-medium">{row.profiles ? shownName(row.profiles) : "—"}</p>
                     <p className="mt-0.5 text-xs text-muted">
                       {row.daily_menus ? formatDate(row.daily_menus.menu_date, lang) : "—"}
                     </p>
@@ -154,7 +155,7 @@ export default async function AdminHistory({
                       <td className="whitespace-nowrap px-5 py-3">
                         {row.daily_menus ? formatDate(row.daily_menus.menu_date, lang) : "—"}
                       </td>
-                      <td className="px-5 py-3">{row.profiles?.name ?? "—"}</td>
+                      <td className="px-5 py-3">{row.profiles ? shownName(row.profiles) : "—"}</td>
                       <td className="px-5 py-3">{row.items ? itemName(row.items, lang) : "—"}</td>
                       <td className="px-5 py-3 tabular-nums">
                         {formatMoney(row.unit_price_bdt, lang)}

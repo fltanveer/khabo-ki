@@ -11,6 +11,7 @@ export type Profile = {
   approved_at: string | null;
   created_at: string;
   is_test: boolean;
+  display_name: string | null;
 };
 
 export type Item = {

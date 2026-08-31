@@ -136,10 +136,10 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             {profile.name} · {t.roles[profile.role]}
           </span>
           <Link
-            href="/settings/payment"
+            href="/settings"
             className="text-muted underline-offset-2 hover:text-ink hover:underline"
           >
-            {t.payment.title}
+            {t.settings.title}
           </Link>
           <form action={signOut}>
             <button

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { shownName } from "@/lib/names";
 
 export type HistoryFilters = {
   from?: string;
@@ -13,7 +14,7 @@ export type HistoryRow = {
   picked_at: string;
   unit_price_bdt: number;
   items: { name: string; name_bn: string | null } | null;
-  profiles: { name: string; phone: string } | null;
+  profiles: { name: string; display_name: string | null; phone: string } | null;
   daily_menus: { menu_date: string } | null;
 };
 
@@ -32,7 +33,7 @@ export async function fetchHistory(filters: HistoryFilters, limit = 1000): Promi
   let query = supabase
     .from("orders")
     .select(
-      "id, source, picked_at, unit_price_bdt, items(name, name_bn), profiles(name, phone), daily_menus!inner(menu_date)",
+      "id, source, picked_at, unit_price_bdt, items(name, name_bn), profiles(name, display_name, phone), daily_menus!inner(menu_date)",
     )
     .order("picked_at", { ascending: false })
     .limit(limit);
@@ -55,7 +56,7 @@ export function toCsv(rows: HistoryRow[]): string {
   const body = rows.map((row) =>
     [
       row.daily_menus?.menu_date ?? "",
-      row.profiles?.name ?? "",
+      row.profiles ? shownName(row.profiles) : "",
       row.profiles?.phone ?? "",
       row.items?.name ?? "",
       row.source,

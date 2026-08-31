@@ -41,7 +41,7 @@ export default async function EmployeeToday() {
     supabase.from("employee_bans").select("item_id").eq("employee_id", profile.id),
     supabase
       .from("orders")
-      .select("item_id, source")
+      .select("item_id, source, confirmed_at")
       .eq("daily_menu_id", menu.id)
       .eq("employee_id", profile.id)
       .maybeSingle(),
@@ -99,7 +99,7 @@ export default async function EmployeeToday() {
       {!open && (
         <Card className="mb-4">
           <p className="text-sm">
-            {order
+            {order?.confirmed_at
               ? fill(
                   t.employee.lockedIn,
                   {
@@ -123,6 +123,7 @@ export default async function EmployeeToday() {
           items={items}
           currentItemId={order?.item_id ?? null}
           source={(order?.source as "manual" | "auto" | undefined) ?? null}
+          confirmed={Boolean(order?.confirmed_at)}
           open={open}
           cutoff={cutoff}
         />

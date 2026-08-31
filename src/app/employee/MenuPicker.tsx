@@ -23,6 +23,7 @@ export function MenuPicker({
   items,
   currentItemId,
   source,
+  confirmed,
   open,
   cutoff,
 }: {
@@ -30,6 +31,7 @@ export function MenuPicker({
   items: PickableItem[];
   currentItemId: string | null;
   source: "manual" | "auto" | null;
+  confirmed: boolean;
   open: boolean;
   cutoff: string;
 }) {
@@ -40,14 +42,22 @@ export function MenuPicker({
 
   // What the server has stored. useOptimistic holds the new value until the
   // refreshed props arrive, so the row never flicks back mid-commit.
+  // Only a confirmed order counts as stored. An auto-pick is a suggestion,
+  // so it starts life staged — the employee still has to say yes to it, or
+  // the office buys lunch for someone who never came in.
   const [confirmedId, setConfirmedId] = useOptimistic(
-    currentItemId,
+    confirmed ? currentItemId : null,
     (_current, next: string | null) => next,
   );
 
   // Tapping a dish only stages it; nothing is ordered until Confirm. null here
   // means "no local change", which is different from a staged clear.
-  const [draft, setDraft] = useState<{ id: string | null } | null>(null);
+  const [draft, setDraft] = useState<{ id: string | null } | null>(
+    !confirmed && currentItemId ? { id: currentItemId } : null,
+  );
+
+  // True while the untouched auto suggestion is still on screen.
+  const suggested = !confirmed && source === "auto" && currentItemId !== null;
 
   const selectedId = draft ? draft.id : confirmedId;
   const dirty = selectedId !== confirmedId;
@@ -69,6 +79,8 @@ export function MenuPicker({
     });
   }
 
+  // "Not today" throws the suggestion away so it stops being offered, and
+  // makes it explicit that this person is not eating.
   function clear() {
     setError("");
     startTransition(async () => {
@@ -107,8 +119,10 @@ export function MenuPicker({
                 </span>
                 {selected ? (
                   <span className="flex items-center gap-2">
-                    {source === "auto" && !dirty && (
-                      <Badge tone="brand">{t.employee.autoPicked}</Badge>
+                    {source === "auto" && (!dirty || suggested) && (
+                      <Badge tone="brand">
+                        {confirmed ? t.employee.autoPicked : t.employee.suggested}
+                      </Badge>
                     )}
                     <Check />
                   </span>
@@ -129,7 +143,16 @@ export function MenuPicker({
           <div className="mx-auto flex max-w-4xl items-center gap-3">
             {dirty ? (
               <>
-                <span className="min-w-0 flex-1 text-sm text-muted">{t.employee.unconfirmed}</span>
+                <span className="min-w-0 flex-1 text-sm text-muted">
+                  {suggested && selectedId === currentItemId
+                    ? t.employee.suggestedBody
+                    : t.employee.unconfirmed}
+                </span>
+                {suggested && (
+                  <Button variant="ghost" size="sm" disabled={pending} onClick={clear}>
+                    {t.employee.notToday}
+                  </Button>
+                )}
                 <Button disabled={pending} onClick={confirm}>
                   {pending ? t.employee.confirming : t.employee.confirmOrder}
                 </Button>

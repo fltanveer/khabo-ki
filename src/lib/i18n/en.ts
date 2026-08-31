@@ -67,6 +67,9 @@ export const en = {
   },
 
   employee: {
+    suggested: "Suggested",
+    suggestedBody: "Picked from your preferences — confirm it to order.",
+    notToday: "Not today",
     title: "Today's lunch",
     noMenu: "No menu published yet. Check back once the kitchen list is in.",
     closesAt: "Closes {time}",
@@ -401,6 +404,19 @@ export const en = {
     priceBody: "Only affects meals ordered from now on — every meal already ordered keeps the price it was placed at.",
     price: "Taka per meal",
     priceSaved: "Price updated.",
+  },
+
+  settings: {
+    title: "Settings",
+    subtitle: "Your name and how people pay you.",
+    nameTitle: "Your name",
+    nameBody: "Several people here share a first name. Set what the rest of the office sees so staff know whose order is whose.",
+    shownAs: "Shown to everyone as",
+    nameHint: "Leave blank to use your registered name.",
+    preview: "Staff will see",
+    registeredAs: "Registered as {name}.",
+    nameSaved: "Name updated.",
+    useRegistered: "Use my registered name",
   },
 };
 

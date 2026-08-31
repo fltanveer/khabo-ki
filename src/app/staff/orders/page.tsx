@@ -4,6 +4,7 @@ import { formatDate, formatTime, isPast, today } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
 import { fill, formatNumber, itemName } from "@/lib/i18n";
 import { Badge, Card, Empty, List, PageHeader, Row, Section } from "@/components/ui";
+import { shownName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ type GuestRow = {
   quantity: number;
   guest_label: string | null;
   items: { name: string; name_bn: string | null } | null;
-  profiles: { name: string } | null;
+  profiles: { name: string; display_name: string | null } | null;
 };
 
 type OrderRow = {
@@ -20,7 +21,7 @@ type OrderRow = {
   source: "manual" | "auto";
   employee_id: string;
   items: { name: string; name_bn: string | null } | null;
-  profiles: { name: string; phone: string } | null;
+  profiles: { name: string; display_name: string | null; phone: string } | null;
 };
 
 export default async function StaffOrders({
@@ -73,18 +74,18 @@ export default async function StaffOrders({
   const [{ data: orderData }, { data: employees }, { data: guestData }] = await Promise.all([
     supabase
       .from("orders")
-      .select("id, source, employee_id, items(name, name_bn), profiles(name, phone)")
+      .select("id, source, employee_id, items(name, name_bn), profiles(name, display_name, phone)")
       .eq("daily_menu_id", menu.id),
     supabase
       .from("profiles")
-      .select("id, name, phone")
+      .select("id, name, display_name, phone")
       .eq("role", "employee")
       .eq("status", "active")
       .eq("is_test", false)
       .order("name"),
     supabase
       .from("guest_meals")
-      .select("id, quantity, guest_label, items(name, name_bn), profiles(name)")
+      .select("id, quantity, guest_label, items(name, name_bn), profiles(name, display_name)")
       .eq("daily_menu_id", menu.id),
   ]);
 
@@ -174,11 +175,17 @@ export default async function StaffOrders({
           <List>
             {orders
               .slice()
-              .sort((a, b) => (a.profiles?.name ?? "").localeCompare(b.profiles?.name ?? ""))
+              .sort((a, b) =>
+                (a.profiles ? shownName(a.profiles) : "").localeCompare(
+                  b.profiles ? shownName(b.profiles) : "",
+                ),
+              )
               .map((order) => (
                 <Row key={order.id}>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{order.profiles?.name ?? "—"}</p>
+                    <p className="truncate text-sm font-medium">
+                      {order.profiles ? shownName(order.profiles) : "—"}
+                    </p>
                     <p className="mt-0.5 text-xs text-muted">{order.profiles?.phone}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -209,7 +216,7 @@ export default async function StaffOrders({
                     )}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-muted">
-                    {guest.profiles?.name ?? "—"}
+                    {guest.profiles ? shownName(guest.profiles) : "—"}
                     {guest.guest_label ? ` · ${guest.guest_label}` : ""}
                   </p>
                 </div>
@@ -228,7 +235,7 @@ export default async function StaffOrders({
           <List>
             {missing.map((employee) => (
               <Row key={employee.id}>
-                <span className="truncate text-sm font-medium">{employee.name}</span>
+                <span className="truncate text-sm font-medium">{shownName(employee)}</span>
                 <a
                   href={`tel:${employee.phone}`}
                   className="text-sm font-medium text-brand underline underline-offset-2"

@@ -18,6 +18,9 @@ export async function pickItem(menuId: string, itemId: string): Promise<ActionRe
       item_id: itemId,
       source: "manual",
       picked_at: new Date().toISOString(),
+      // Confirming is what makes it a real order — staff count nothing until
+      // this is set.
+      confirmed_at: new Date().toISOString(),
     },
     { onConflict: "employee_id,daily_menu_id" },
   );

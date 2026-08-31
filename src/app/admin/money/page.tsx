@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getI18n } from "@/lib/i18n/server";
 import { formatMoney, monthKey, monthLabel, shiftMonth } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
+import { shownName } from "@/lib/names";
 import { Settlement, type SettlementRow } from "./Settlement";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export default async function AdminMoney({
         .from("meal_bills")
         .select("employee_id, own_meals, guest_meals, amount_bdt")
         .eq("month", month),
-      supabase.from("profiles").select("id, name, phone, status").order("name"),
+      supabase.from("profiles").select("id, name, display_name, phone, status").order("name"),
       supabase
         .from("payments")
         .select("id, payer_id, amount_bdt, method, note, claimed_at, confirmed_at")
@@ -48,7 +49,7 @@ export default async function AdminMoney({
 
       return {
         employeeId: bill.employee_id,
-        name: person?.name ?? "—",
+        name: person ? shownName(person) : "—",
         phone: person?.phone ?? "",
         ownMeals: bill.own_meals,
         guestMeals: bill.guest_meals,

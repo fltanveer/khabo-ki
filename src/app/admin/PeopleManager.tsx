@@ -5,6 +5,7 @@ import { approveUser, createUser, deleteUser, setUserStatus } from "./actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
 import { Badge, Button, Card, Empty, Input, List, Notice, Row, Section, Select } from "@/components/ui";
+import { shownName } from "@/lib/names";
 import type { Profile, Status } from "@/lib/types";
 
 const TONE: Record<Status, "warn" | "good" | "bad"> = {
@@ -54,11 +55,12 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
         <div className="flex min-w-0 items-start gap-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
-              {person.name}
+              {shownName(person)}
               {isSelf && <span className="text-muted"> ({t.admin.you})</span>}
             </p>
             <p className="mt-0.5 truncate text-xs text-muted">
               {person.phone} · {t.roles[person.role]}
+              {person.display_name ? ` · ${person.name}` : ""}
             </p>
           </div>
           {/* Status rides with the name on a phone; the buttons get their own row. */}
@@ -71,7 +73,7 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
         {isConfirming ? (
           <div className="sm:shrink-0">
             <p className="mb-2 text-xs leading-relaxed text-bad sm:text-right">
-              {f(t.admin.deleteConfirm, { name: person.name })}
+              {f(t.admin.deleteConfirm, { name: shownName(person) })}
             </p>
             <div className="flex gap-2 sm:justify-end">
               <Button
@@ -93,7 +95,7 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
                     () => deleteUser(person.id),
                     () => {
                       setConfirming(null);
-                      setMessage(f(t.admin.deleted, { name: person.name }));
+                      setMessage(f(t.admin.deleted, { name: shownName(person) }));
                     },
                   )
                 }
