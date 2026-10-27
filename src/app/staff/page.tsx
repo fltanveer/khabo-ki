@@ -2,8 +2,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { APP_TZ, formatDate, isPast, today } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
-import { fill } from "@/lib/i18n";
-import { Badge, Empty, PageHeader } from "@/components/ui";
+import { Empty, PageHeader } from "@/components/ui";
 import { MenuBuilder } from "./MenuBuilder";
 import { StartDayButton } from "./StartDayButton";
 
@@ -34,11 +33,11 @@ export default async function StaffToday() {
     return (
       <>
         <PageHeader title={t.staff.title} subtitle={formatDate(menuDate, lang)} />
-        <Empty>
-          <p className="mb-4">{t.staff.noMenuYet}</p>
-          <div className="flex justify-center">
+        <Empty mood="waiting">
+          <span className="mb-5 block">{t.staff.noMenuYet}</span>
+          <span className="flex justify-center">
             <StartDayButton menuDate={menuDate} />
-          </div>
+          </span>
         </Empty>
       </>
     );
@@ -88,11 +87,6 @@ export default async function StaffToday() {
       <PageHeader
         title={t.staff.title}
         subtitle={formatDate(menuDate, lang)}
-        action={
-          published ? (
-            <Badge tone="brand">{fill(t.staff.ordersIn, { count: orderCount ?? 0 }, lang)}</Badge>
-          ) : undefined
-        }
       />
 
       <MenuBuilder
@@ -104,6 +98,7 @@ export default async function StaffToday() {
         orderingClosed={orderingClosed}
         library={tiles}
         initialSelected={onMenu.map((item) => item.id)}
+        orderCount={orderCount ?? 0}
       />
     </>
   );

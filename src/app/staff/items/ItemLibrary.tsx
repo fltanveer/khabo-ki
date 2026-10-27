@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { createLibraryItem, setItemActive } from "../actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
-import { Badge, Button, Card, Empty, Input, List, Notice, Row } from "@/components/ui";
+import { Badge, Button, Empty, Input, List, Notice, Row } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 
 type Item = { id: string; name: string; name_bn: string | null; is_active: boolean };
 
@@ -12,6 +13,7 @@ export function ItemLibrary({ items }: { items: Item[] }) {
   const { t, dish } = useI18n();
   const errorText = useErrorText();
   const [name, setName] = useState("");
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -25,41 +27,67 @@ export function ItemLibrary({ items }: { items: Item[] }) {
 
   return (
     <div className="space-y-5">
-      <Notice>{error}</Notice>
+      {!adding && <Notice>{error}</Notice>}
 
-      <Card>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Input
-              label={t.staff.addDish}
-              value={name}
-              placeholder={t.staff.dishPlaceholder}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <Button
-            disabled={pending || name.trim().length < 2}
-            onClick={() =>
-              run(async () => {
-                const result = await createLibraryItem(name);
-                if (!result.error) setName("");
-                return result;
-              })
-            }
-          >
-            {t.common.add}
-          </Button>
-        </div>
-      </Card>
+      <Button block onClick={() => setAdding(true)}>
+        + {t.staff.addDish}
+      </Button>
+
+      <Sheet
+        open={adding}
+        onClose={() => {
+          setError("");
+          setAdding(false);
+        }}
+        title={t.staff.addDish}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => {
+                setError("");
+                setAdding(false);
+              }}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={pending || name.trim().length < 2}
+              onClick={() =>
+                run(async () => {
+                  const result = await createLibraryItem(name);
+                  if (!result.error) {
+                    setName("");
+                    setAdding(false);
+                  }
+                  return result;
+                })
+              }
+            >
+              {pending ? t.common.saving : t.common.add}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          value={name}
+          placeholder={t.staff.dishPlaceholder}
+          onChange={(e) => setName(e.target.value)}
+        />
+        {adding && <Notice>{error}</Notice>}
+      </Sheet>
 
       {items.length === 0 ? (
-        <Empty>{t.prefs.emptyLibrary}</Empty>
+        <Empty mood="sleepy">{t.prefs.emptyLibrary}</Empty>
       ) : (
         <List>
           {items.map((item) => (
             <Row key={item.id}>
               <span
-                className={`min-w-0 flex-1 truncate text-sm ${
+                className={`min-w-0 flex-1 truncate text-[1.02rem] ${
                   item.is_active ? "font-medium" : "text-muted line-through"
                 }`}
               >

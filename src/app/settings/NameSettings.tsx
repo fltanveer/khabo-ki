@@ -44,7 +44,7 @@ export function NameSettings({
           onChange={(e) => setValue(e.target.value)}
         />
 
-        <p className="rounded-xl bg-raised px-3.5 py-2.5 text-sm">
+        <p className="rounded-2xl bg-raised px-4 py-3 text-sm">
           <span className="text-muted">{t.settings.preview} </span>
           <span className="font-medium">{shown}</span>
         </p>

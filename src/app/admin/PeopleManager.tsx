@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { approveUser, createUser, deleteUser, setUserStatus } from "./actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
-import { Badge, Button, Card, Empty, Input, List, Notice, Row, Section, Select } from "@/components/ui";
+import { Badge, Button, Empty, Input, List, Notice, Row, Section, Select } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 import { shownName } from "@/lib/names";
 import type { Profile, Status } from "@/lib/types";
 
@@ -14,7 +15,15 @@ const TONE: Record<Status, "warn" | "good" | "bad"> = {
   inactive: "bad",
 };
 
-export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: string }) {
+export function PeopleManager({
+  people,
+  selfId,
+  children,
+}: {
+  people: Profile[];
+  selfId: string;
+  children?: React.ReactNode;
+}) {
   const { t, f, n } = useI18n();
   const errorText = useErrorText();
   const [error, setError] = useState("");
@@ -28,6 +37,7 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
     password: "",
     role: "staff" as "staff" | "admin",
   });
+  const [creating, setCreating] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function run(
@@ -48,7 +58,6 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
 
   function personRow(person: Profile) {
     const isSelf = person.id === selfId;
-    const isConfirming = confirming === person.id;
 
     return (
       <Row key={person.id} className="flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
@@ -70,42 +79,7 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
           </div>
         </div>
 
-        {isConfirming ? (
-          <div className="sm:shrink-0">
-            <p className="mb-2 text-xs leading-relaxed text-bad sm:text-right">
-              {f(t.admin.deleteConfirm, { name: shownName(person) })}
-            </p>
-            <div className="flex gap-2 sm:justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-1 sm:flex-none"
-                disabled={pending}
-                onClick={() => setConfirming(null)}
-              >
-                {t.common.cancel}
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                className="flex-1 sm:flex-none"
-                disabled={pending}
-                onClick={() =>
-                  run(
-                    () => deleteUser(person.id),
-                    () => {
-                      setConfirming(null);
-                      setMessage(f(t.admin.deleted, { name: shownName(person) }));
-                    },
-                  )
-                }
-              >
-                {t.admin.deleteYes}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-2 sm:shrink-0">
+        <div className="flex gap-2 sm:shrink-0">
             {person.status === "pending" && (
               <Button
                 size="sm"
@@ -154,27 +128,65 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
               </Button>
             )}
           </div>
-        )}
       </Row>
     );
   }
 
   const waiting = people.filter((p) => p.status === "pending");
   const rest = people.filter((p) => p.status !== "pending");
+  const activeCount = people.filter((p) => p.status === "active").length;
+  const inactiveCount = people.filter((p) => p.status === "inactive").length;
+  const toDelete = people.find((p) => p.id === confirming) ?? null;
+
+  function closeCreate() {
+    setError("");
+    setCreating(false);
+  }
 
   return (
     <div>
       <div className="mb-4 space-y-2">
-        <Notice>{error}</Notice>
+        {!creating && !toDelete && <Notice>{error}</Notice>}
         <Notice tone="good">{message}</Notice>
       </div>
+
+      {/* Who's in the office at a glance; the waiting count is the one that
+          wants something from the admin, so it's the hero. */}
+      <section className="mb-7 rounded-card bg-surface p-6 shadow-[var(--shadow-card)]">
+        <p className="flex items-center gap-1.5 text-sm font-light italic text-muted">
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 rounded-full ${waiting.length > 0 ? "bg-warn" : "bg-good"}`}
+          />
+          {t.admin.waiting}
+        </p>
+        <p className="metric mt-3 text-[4.5rem]">{n(waiting.length)}</p>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          {[
+            { label: t.status.active, value: activeCount },
+            { label: t.status.inactive, value: inactiveCount },
+          ].map((figure) => (
+            <div key={figure.label} className="rounded-inner bg-raised px-4 py-3">
+              <p className="text-xs capitalize text-muted">{figure.label}</p>
+              <p className="mt-1 text-[1.6rem] font-light leading-none tracking-[-0.02em] tabular-nums">
+                {n(figure.value)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <Button block className="mt-5" onClick={() => setCreating(true)}>
+          + {t.admin.createTitle}
+        </Button>
+      </section>
+
+      {children}
 
       <Section
         title={t.admin.waiting}
         aside={waiting.length > 0 ? <Badge tone="warn">{n(waiting.length)}</Badge> : undefined}
       >
         {waiting.length === 0 ? (
-          <Empty>{t.admin.nobodyWaiting}</Empty>
+          <Empty mood="happy">{t.admin.nobodyWaiting}</Empty>
         ) : (
           <List>{waiting.map(personRow)}</List>
         )}
@@ -184,9 +196,82 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
         <List>{rest.map(personRow)}</List>
       </Section>
 
-      <Section title={t.admin.createTitle} description={t.admin.createBody}>
-        <Card>
-          <div className="grid gap-3 sm:grid-cols-2">
+      <Sheet
+        open={toDelete !== null}
+        onClose={() => {
+          setError("");
+          setConfirming(null);
+        }}
+        title={t.admin.delete}
+        description={toDelete ? f(t.admin.deleteConfirm, { name: shownName(toDelete) }) : undefined}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => setConfirming(null)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={pending || !toDelete}
+              onClick={() => {
+                if (!toDelete) return;
+                const person = toDelete;
+                run(
+                  () => deleteUser(person.id),
+                  () => {
+                    setConfirming(null);
+                    setMessage(f(t.admin.deleted, { name: shownName(person) }));
+                  },
+                );
+              }}
+            >
+              {t.admin.deleteYes}
+            </Button>
+          </>
+        }
+      >
+        {toDelete && <Notice>{error}</Notice>}
+      </Sheet>
+
+      <Sheet
+        open={creating}
+        onClose={closeCreate}
+        title={t.admin.createTitle}
+        description={t.admin.createBody}
+        footer={
+          <>
+            <Button variant="secondary" className="shrink-0 px-6" disabled={pending} onClick={closeCreate}>
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={pending}
+              onClick={() =>
+                run(
+                  () => createUser(form.name, form.phone, form.password, form.role),
+                  () => {
+                    setMessage(
+                      f(t.admin.created, {
+                        role: form.role === "admin" ? t.roles.admin : t.roles.staff,
+                      }),
+                    );
+                    setForm({ name: "", phone: "", password: "", role: form.role });
+                    setCreating(false);
+                  },
+                )
+              }
+            >
+              {pending ? t.common.saving : t.auth.createAccount}
+            </Button>
+          </>
+        }
+      >
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label={t.auth.fullName}
               value={form.name}
@@ -214,27 +299,8 @@ export function PeopleManager({ people, selfId }: { people: Profile[]; selfId: s
               <option value="admin">{t.roles.admin}</option>
             </Select>
           </div>
-          <Button
-            className="mt-4 w-full sm:w-auto"
-            disabled={pending}
-            onClick={() =>
-              run(
-                () => createUser(form.name, form.phone, form.password, form.role),
-                () => {
-                  setMessage(
-                    f(t.admin.created, {
-                      role: form.role === "admin" ? t.roles.admin : t.roles.staff,
-                    }),
-                  );
-                  setForm({ name: "", phone: "", password: "", role: form.role });
-                },
-              )
-            }
-          >
-            {t.auth.createAccount}
-          </Button>
-        </Card>
-      </Section>
+          {creating && <Notice>{error}</Notice>}
+      </Sheet>
     </div>
   );
 }

@@ -50,14 +50,14 @@ export function PayeeDetails({
 
       {details.number && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-lg bg-raised px-2.5 py-1 text-xs font-medium text-muted">
+          <span className="rounded-full bg-raised px-3 py-1 text-xs font-medium text-muted">
             {PROVIDER_LABEL[details.provider ?? "other"]}
           </span>
           <span className="font-mono text-base tracking-wide tabular-nums">{details.number}</span>
           <button
             type="button"
             onClick={() => copy(details.number!)}
-            className="min-h-11 rounded-lg border border-line-strong px-3 text-xs font-medium text-muted transition hover:bg-raised hover:text-ink sm:min-h-8"
+            className="min-h-11 rounded-full border border-line px-4 text-xs font-semibold text-muted transition hover:bg-raised hover:text-ink sm:min-h-8"
           >
             {copied ? t.events.copied : t.events.copyNumber}
           </button>
@@ -72,7 +72,7 @@ export function PayeeDetails({
           <img
             src={details.qr_image}
             alt={f(t.events.payVia, { name })}
-            className="w-full max-w-[220px] rounded-xl border border-line bg-white p-2"
+            className="w-full max-w-[220px] rounded-2xl border border-line bg-white p-2"
           />
         </div>
       )}

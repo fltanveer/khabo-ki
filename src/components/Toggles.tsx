@@ -20,12 +20,31 @@ const themeStore = {
   },
 };
 
-export function ThemeToggle() {
+function Sun() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+    </svg>
+  );
+}
+
+function Moon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+    </svg>
+  );
+}
+
+// Two labelled segments (icon + word) wherever there's room, like the side
+// menu. compact keeps the single icon button for tight headers.
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const mode = useSyncExternalStore(themeStore.subscribe, themeStore.get, () => "light" as Mode);
 
-  function toggle() {
-    const next: Mode = mode === "dark" ? "light" : "dark";
+  function choose(next: Mode) {
+    if (next === mode) return;
     document.documentElement.setAttribute("data-theme", next);
     try {
       localStorage.setItem("theme", next);
@@ -35,24 +54,41 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event("themechange"));
   }
 
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => choose(mode === "dark" ? "light" : "dark")}
+        aria-label={`${t.common.theme}: ${mode === "dark" ? t.common.dark : t.common.light}`}
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95"
+      >
+        {mode === "dark" ? <Sun /> : <Moon />}
+      </button>
+    );
+  }
+
+  const options: { value: Mode; label: string; icon: React.ReactNode }[] = [
+    { value: "light", label: t.common.light, icon: <Sun /> },
+    { value: "dark", label: t.common.dark, icon: <Moon /> },
+  ];
+
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={`${t.common.theme}: ${mode === "dark" ? t.common.dark : t.common.light}`}
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line-strong bg-surface text-ink transition active:scale-95"
-    >
-      {mode === "dark" ? (
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
-        </svg>
-      ) : (
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
-        </svg>
-      )}
-    </button>
+    <div role="group" aria-label={t.common.theme} className="flex shrink-0 items-center rounded-full bg-raised p-1">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => choose(option.value)}
+          aria-pressed={option.value === mode}
+          className={`flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition ${
+            option.value === mode ? "bg-ink text-bg" : "text-muted"
+          }`}
+        >
+          {option.icon}
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -66,15 +102,15 @@ export function LangToggle() {
   }
 
   return (
-    <div className="flex shrink-0 items-center rounded-full border border-line-strong bg-surface p-0.5">
+    <div className="flex shrink-0 items-center rounded-full bg-raised p-1">
       {LANGS.map((code) => (
         <button
           key={code}
           type="button"
           onClick={() => choose(code)}
           aria-pressed={code === lang}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-            code === lang ? "bg-brand text-on-brand" : "text-muted"
+          className={`min-h-9 rounded-full px-3.5 text-sm font-semibold transition ${
+            code === lang ? "bg-ink text-bg" : "text-muted"
           }`}
         >
           {code === "en" ? "EN" : LANG_LABEL.bn}

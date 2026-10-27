@@ -7,11 +7,12 @@ import { formatDate } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
 import { fill, formatNumber, itemName } from "@/lib/i18n";
 import { Badge, Card, Empty, List, PageHeader, Row } from "@/components/ui";
+import { SheetButton } from "@/components/SheetButton";
 
 export const dynamic = "force-dynamic";
 
 const FIELD =
-  "w-full rounded-xl border border-line-strong bg-surface px-3 py-2.5 text-sm text-ink";
+  "min-h-12 w-full rounded-[1.125rem] border border-line-strong bg-surface px-4 py-3 text-ink outline-none focus:border-ink focus:ring-4 focus:ring-ink/10";
 
 export default async function AdminHistory({
   searchParams,
@@ -48,25 +49,26 @@ export default async function AdminHistory({
         action={
           <a
             href={`/admin/history/export${exportQuery ? `?${exportQuery}` : ""}`}
-            className="inline-flex min-h-11 items-center rounded-xl bg-brand px-4 text-sm font-medium text-on-brand sm:min-h-10"
+            className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-semibold text-bg"
           >
             {t.admin.exportCsv}
           </a>
         }
       />
 
-      <Card className="mb-5">
-        <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5">
+      <SheetButton label={t.admin.filters} title={t.admin.filters}>
+        <form className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">{t.admin.from}</span>
+            <span className="mb-2 block text-sm font-medium text-muted">{t.admin.from}</span>
             <input type="date" name="from" defaultValue={filters.from ?? ""} className={FIELD} />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">{t.admin.to}</span>
+            <span className="mb-2 block text-sm font-medium text-muted">{t.admin.to}</span>
             <input type="date" name="to" defaultValue={filters.to ?? ""} className={FIELD} />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">{t.admin.employee}</span>
+            <span className="mb-2 block text-sm font-medium text-muted">{t.admin.employee}</span>
             <select name="employee" defaultValue={filters.employeeId ?? ""} className={FIELD}>
               <option value="">{t.admin.everyone}</option>
               {(employees ?? []).map((employee) => (
@@ -77,7 +79,7 @@ export default async function AdminHistory({
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">{t.admin.dish}</span>
+            <span className="mb-2 block text-sm font-medium text-muted">{t.admin.dish}</span>
             <select name="item" defaultValue={filters.itemId ?? ""} className={FIELD}>
               <option value="">{t.admin.anything}</option>
               {(items ?? []).map((item) => (
@@ -87,23 +89,24 @@ export default async function AdminHistory({
               ))}
             </select>
           </label>
-          <div className="sm:col-span-2 lg:col-span-4">
+          <div className="pt-1 sm:col-span-2">
             <button
               type="submit"
-              className="min-h-11 w-full rounded-xl border border-line-strong px-4 text-sm font-medium sm:min-h-10 sm:w-auto"
+              className="min-h-12 w-full rounded-full bg-ink px-5 font-semibold text-bg"
             >
               {t.admin.applyFilters}
             </button>
           </div>
         </form>
-      </Card>
+      </SheetButton>
+      </div>
 
       {counts.size > 0 && (
         <div className="mb-5 flex flex-wrap gap-2">
           {[...counts.entries()]
             .sort((a, b) => b[1] - a[1])
             .map(([name, count]) => (
-              <Badge key={name} tone="brand">
+              <Badge key={name}>
                 {name}: {formatNumber(count, lang)}
               </Badge>
             ))}
@@ -111,7 +114,7 @@ export default async function AdminHistory({
       )}
 
       {rows.length === 0 ? (
-        <Empty>{t.admin.noMatches}</Empty>
+        <Empty mood="sleepy">{t.admin.noMatches}</Empty>
       ) : (
         <>
           {/* Cards on phones, a real table once there's width for it. */}

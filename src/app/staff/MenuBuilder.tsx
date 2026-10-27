@@ -10,15 +10,16 @@ import {
 } from "./actions";
 import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
-import { Badge, Button, Card, Input, Notice, Section } from "@/components/ui";
+import { Button, Input, Notice, Section } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 
 type Item = { id: string; name: string; name_bn: string | null };
 
 function Tick({ on }: { on: boolean }) {
   return (
     <span
-      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${
-        on ? "border-brand bg-brand text-on-brand" : "border-2 border-line-strong bg-surface"
+      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full transition ${
+        on ? "bg-brand text-on-brand" : "border-[1.5px] border-line-strong"
       }`}
     >
       {on && (
@@ -39,6 +40,7 @@ export function MenuBuilder({
   orderingClosed,
   library,
   initialSelected,
+  orderCount,
 }: {
   menuId: string;
   menuDate: string;
@@ -48,6 +50,7 @@ export function MenuBuilder({
   orderingClosed: boolean;
   library: Item[];
   initialSelected: string[];
+  orderCount: number;
 }) {
   const { t, f, n, dish } = useI18n();
   const errorText = useErrorText();
@@ -56,6 +59,8 @@ export function MenuBuilder({
   const [savedSet, setSavedSet] = useState<string[]>(initialSelected);
   const [newName, setNewName] = useState("");
   const [cutoff, setCutoffValue] = useState(cutoffHHMM);
+  const [addingDish, setAddingDish] = useState(false);
+  const [editingCutoff, setEditingCutoff] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
@@ -95,6 +100,28 @@ export function MenuBuilder({
     );
   }
 
+  const statusTone = !published ? "bg-warn" : orderingClosed ? "bg-bad" : "bg-good";
+  const statusLabel = !published
+    ? t.staff.draft
+    : orderingClosed
+      ? t.staff.orderingClosed
+      : t.staff.published;
+
+  function addOneOff() {
+    run(async () => {
+      const result = await addOneOffDish(newName);
+      // A brand-new dish should arrive already ticked.
+      if (result.itemId) {
+        setSelected((prev) =>
+          prev.includes(result.itemId!) ? prev : [...prev, result.itemId!],
+        );
+        setNewName("");
+        setAddingDish(false);
+      }
+      return result;
+    });
+  }
+
   return (
     <div>
       <div className="mb-4 space-y-2">
@@ -102,20 +129,53 @@ export function MenuBuilder({
         <Notice tone="good">{message}</Notice>
       </div>
 
-      <Section
-        title={t.staff.pickDishes}
-        description={t.staff.pickDishesBody}
-        aside={
-          !published ? (
-            <Badge tone="warn">{t.staff.draft}</Badge>
-          ) : orderingClosed ? (
-            <Badge tone="bad">{t.staff.orderingClosed}</Badge>
-          ) : (
-            <Badge tone="good">{t.staff.published}</Badge>
-          )
-        }
-      >
-        <ul className="grid gap-2 sm:grid-cols-2">
+      {/* The hero: one number that says where the day stands — orders once
+          it's live, dishes picked while it's still a draft. */}
+      <section className="mb-7 rounded-card bg-surface p-6 shadow-[var(--shadow-card)]">
+        <p className="flex items-center gap-1.5 text-sm font-light italic text-muted">
+          <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${statusTone}`} />
+          {statusLabel}
+        </p>
+        <p className="metric mt-3 text-[4.5rem]">
+          {n(published ? orderCount : selected.length)}
+          <span className="unit">{published ? t.staff.ordersUnit : t.staff.dishesUnit}</span>
+        </p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <div>
+            <p className="text-xs text-muted">{t.staff.cutoffLabel}</p>
+            <p className="mt-0.5 text-xl font-medium tabular-nums">{cutoffHHMM}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!lockedEarly && !orderingClosed && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={pending}
+                onClick={() => {
+                  setCutoffValue(cutoffHHMM);
+                  setEditingCutoff(true);
+                }}
+              >
+                {t.common.change}
+              </Button>
+            )}
+            {published && !lockedEarly && !orderingClosed && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={pending}
+                onClick={() => run(() => lockMenu(menuId))}
+              >
+                {t.staff.closeNow}
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <Section title={t.staff.pickDishes} description={t.staff.pickDishesBody}>
+        <ul className="grid gap-2.5 sm:grid-cols-2">
           {library.map((item) => {
             const on = selected.includes(item.id);
             return (
@@ -125,14 +185,14 @@ export function MenuBuilder({
                   disabled={orderingClosed}
                   aria-pressed={on}
                   onClick={() => toggle(item.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3.5 text-left transition active:scale-[0.99] disabled:opacity-55 ${
-                    on ? "border-brand bg-brand-soft" : "border-line-strong bg-surface hover:border-brand"
+                  className={`flex min-h-16 w-full items-center gap-3.5 rounded-[1.5rem] border-2 px-4 py-3 text-left transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.985] disabled:opacity-55 ${
+                    on
+                      ? "border-ink bg-ink text-bg"
+                      : "border-transparent bg-surface shadow-[var(--shadow-card)] hover:border-line"
                   }`}
                 >
                   <Tick on={on} />
-                  <span className={`text-[0.95rem] ${on ? "font-semibold" : "font-medium"}`}>
-                    {dish(item)}
-                  </span>
+                  <span className="text-[1.05rem] font-medium leading-snug">{dish(item)}</span>
                 </button>
               </li>
             );
@@ -140,116 +200,124 @@ export function MenuBuilder({
         </ul>
 
         {!orderingClosed && (
-          <Card className="mt-4">
-            <p className="mb-2 text-sm font-medium">{t.staff.oneOff}</p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="flex-1">
-                <Input
-                  value={newName}
-                  placeholder={t.staff.oneOffPlaceholder}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-              </div>
-              <Button
-                variant="secondary"
-                disabled={pending || newName.trim().length < 2}
-                onClick={() =>
-                  run(
-                    async () => {
-                      const result = await addOneOffDish(newName);
-                      // A brand-new dish should arrive already ticked.
-                      if (result.itemId) {
-                        setSelected((prev) =>
-                          prev.includes(result.itemId!) ? prev : [...prev, result.itemId!],
-                        );
-                        setNewName("");
-                      }
-                      return result;
-                    },
-                  )
-                }
-              >
-                {t.staff.oneOffAdd}
-              </Button>
-            </div>
-          </Card>
+          <Button variant="secondary" block className="mt-3" onClick={() => setAddingDish(true)}>
+            + {t.staff.oneOffOpen}
+          </Button>
         )}
       </Section>
 
-      <Section title={t.staff.cutoff}>
-        <Card>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="w-40">
-              <Input
-                label={t.staff.cutoffLabel}
-                type="time"
-                value={cutoff}
-                disabled={lockedEarly}
-                onChange={(e) => setCutoffValue(e.target.value)}
-              />
-            </div>
+      <Sheet
+        open={addingDish}
+        onClose={() => setAddingDish(false)}
+        title={t.staff.oneOff}
+        footer={
+          <>
             <Button
               variant="secondary"
-              disabled={pending || lockedEarly || cutoff === cutoffHHMM}
-              onClick={() => run(() => setCutoff(menuId, menuDate, cutoff))}
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => setAddingDish(false)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={pending || newName.trim().length < 2}
+              onClick={addOneOff}
+            >
+              {t.staff.oneOffAdd}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          value={newName}
+          placeholder={t.staff.oneOffPlaceholder}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+        {addingDish && <Notice>{error}</Notice>}
+      </Sheet>
+
+      <Sheet
+        open={editingCutoff}
+        onClose={() => setEditingCutoff(false)}
+        title={t.staff.cutoff}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => setEditingCutoff(false)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={pending || cutoff === cutoffHHMM}
+              onClick={() =>
+                run(
+                  () => setCutoff(menuId, menuDate, cutoff),
+                  () => setEditingCutoff(false),
+                )
+              }
             >
               {t.staff.saveCutoff}
             </Button>
-          </div>
-        </Card>
-      </Section>
-
-      {published && !lockedEarly && !orderingClosed && (
-        <Button variant="secondary" disabled={pending} onClick={() => run(() => lockMenu(menuId))}>
-          {t.staff.closeNow}
-        </Button>
-      )}
-
-      {/* The primary action follows the thumb on mobile and stays visible. */}
-      <div
-        className="fixed inset-x-0 bottom-[4.25rem] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-md md:static md:mt-6 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          </>
+        }
       >
-        <div className="mx-auto flex max-w-4xl items-center gap-3">
-          <span className="text-sm text-muted md:hidden">
+        <Input
+          label={t.staff.cutoffLabel}
+          type="time"
+          value={cutoff}
+          onChange={(e) => setCutoffValue(e.target.value)}
+        />
+        {editingCutoff && <Notice>{error}</Notice>}
+      </Sheet>
+
+      {/* Keeps the last dish clear of the floating bar on phones. */}
+      <div aria-hidden="true" className="h-24 md:hidden" />
+
+      {/* The primary action floats above the nav capsule, within thumb reach. */}
+      <div
+        className="fixed inset-x-3 z-20 md:static md:inset-auto md:mt-6"
+        style={{ bottom: "calc(4rem + 1.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-xl items-center gap-3 rounded-full bg-surface/90 p-2 pl-5 shadow-float backdrop-blur-xl md:max-w-none">
+          <span className="min-w-0 flex-1 text-sm font-medium text-muted">
             {f(t.staff.selected, { count: selected.length })}
+            <span className="hidden md:inline"> · {n(library.length)}</span>
           </span>
-          <div className="ml-auto flex gap-2">
-            {dirty && (
-              <Button disabled={pending} onClick={saveMenu}>
-                {pending ? t.common.saving : t.staff.saveMenu}
-              </Button>
-            )}
-            {!published && (
-              <Button
-                variant={dirty ? "secondary" : "primary"}
-                disabled={pending || selected.length === 0}
-                onClick={() =>
-                  run(
-                    async () => {
-                      // Publishing an unsaved selection would ship the wrong menu.
-                      if (dirty) {
-                        const sync = await syncMenuItems(menuId, selected);
-                        if (sync.error) return sync;
-                        setSavedSet([...selected]);
-                      }
-                      const result = await publishMenu(menuId);
-                      if (!result.error) {
-                        setMessage(f(t.staff.publishResult, { count: result.autoPicks ?? 0 }));
-                      }
-                      return result;
-                    },
-                  )
-                }
-              >
-                {t.staff.publish}
-              </Button>
-            )}
-          </div>
+          {dirty && (
+            <Button disabled={pending} onClick={saveMenu}>
+              {pending ? t.common.saving : t.staff.saveMenu}
+            </Button>
+          )}
+          {!published && (
+            <Button
+              variant={dirty ? "secondary" : "accent"}
+              disabled={pending || selected.length === 0}
+              onClick={() =>
+                run(async () => {
+                  // Publishing an unsaved selection would ship the wrong menu.
+                  if (dirty) {
+                    const sync = await syncMenuItems(menuId, selected);
+                    if (sync.error) return sync;
+                    setSavedSet([...selected]);
+                  }
+                  const result = await publishMenu(menuId);
+                  if (!result.error) {
+                    setMessage(f(t.staff.publishResult, { count: result.autoPicks ?? 0 }));
+                  }
+                  return result;
+                })
+              }
+            >
+              {t.staff.publish}
+            </Button>
+          )}
         </div>
-        <p className="mx-auto mt-1 hidden max-w-4xl text-right text-xs text-muted md:block">
-          {f(t.staff.selected, { count: selected.length })} · {n(library.length)}
-        </p>
       </div>
     </div>
   );

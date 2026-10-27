@@ -6,8 +6,9 @@ import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
 import { formatMoney } from "@/lib/money";
 import { formatDateTime } from "@/lib/date";
-import { Badge, Button, Card, Input, List, Notice, Row, Section, Select } from "@/components/ui";
+import { Badge, Button, Input, List, Notice, Row, Section, Select } from "@/components/ui";
 import { PayeeDetails } from "@/components/PayeeDetails";
+import { Sheet } from "@/components/Sheet";
 import type { PaymentDetails } from "@/lib/types";
 
 type Claim = {
@@ -55,9 +56,14 @@ export function PayPanel({
     });
   }
 
+  function close() {
+    setError("");
+    setOpen(false);
+  }
+
   return (
     <Section title={admin ? f(t.money.payTo, { name: admin.name }) : t.money.recordPayment}>
-      {error && (
+      {error && !open && (
         <div className="mb-3">
           <Notice>{error}</Notice>
         </div>
@@ -69,53 +75,49 @@ export function PayPanel({
         <>
           <PayeeDetails name={admin.name} details={adminPayment} />
 
-          {open ? (
-            <Card className="mt-3">
-              <div className="space-y-3">
-                <Input
-                  label={t.money.amount}
-                  inputMode="numeric"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
-                  placeholder={String(outstanding || "")}
-                />
-                <Select
-                  label={t.money.method}
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value as "cash" | "qr")}
-                >
-                  <option value="cash">{t.money.cash}</option>
-                  <option value="qr">{t.money.qr}</option>
-                </Select>
-                <Input
-                  label={t.money.note}
-                  value={note}
-                  maxLength={200}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    className="flex-1 sm:flex-none"
-                    disabled={pending}
-                    onClick={() => {
-                      setError("");
-                      setOpen(false);
-                    }}
-                  >
-                    {t.common.cancel}
-                  </Button>
-                  <Button className="flex-1 sm:flex-none" disabled={pending} onClick={submit}>
-                    {pending ? t.common.saving : t.money.submit}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <Button className="mt-3" variant="secondary" block onClick={() => setOpen(true)}>
-              {t.money.recordPayment}
-            </Button>
-          )}
+          <Button className="mt-3" variant="secondary" block onClick={() => setOpen(true)}>
+            {t.money.recordPayment}
+          </Button>
+
+          <Sheet
+            open={open}
+            onClose={close}
+            title={t.money.recordPayment}
+            description={f(t.money.payTo, { name: admin.name })}
+            footer={
+              <>
+                <Button variant="secondary" className="shrink-0 px-6" disabled={pending} onClick={close}>
+                  {t.common.cancel}
+                </Button>
+                <Button className="flex-1" disabled={pending} onClick={submit}>
+                  {pending ? t.common.saving : t.money.submit}
+                </Button>
+              </>
+            }
+          >
+            <Input
+              label={t.money.amount}
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+              placeholder={String(outstanding || "")}
+            />
+            <Select
+              label={t.money.method}
+              value={method}
+              onChange={(e) => setMethod(e.target.value as "cash" | "qr")}
+            >
+              <option value="cash">{t.money.cash}</option>
+              <option value="qr">{t.money.qr}</option>
+            </Select>
+            <Input
+              label={t.money.note}
+              value={note}
+              maxLength={200}
+              onChange={(e) => setNote(e.target.value)}
+            />
+            <Notice>{error}</Notice>
+          </Sheet>
         </>
       )}
 

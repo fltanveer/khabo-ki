@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatTime, isPast, today } from "@/lib/date";
 import { getI18n } from "@/lib/i18n/server";
 import { fill, formatNumber, itemName } from "@/lib/i18n";
-import { Badge, Card, Empty, List, PageHeader, Row, Section } from "@/components/ui";
+import { Badge, Empty, List, PageHeader, Row, Section } from "@/components/ui";
 import { shownName } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
@@ -47,11 +47,11 @@ export default async function StaffOrders({
         type="date"
         name="date"
         defaultValue={menuDate}
-        className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm text-ink"
+        className="min-h-11 rounded-full border border-line bg-surface px-4 text-sm text-ink"
       />
       <button
         type="submit"
-        className="min-h-11 rounded-xl border border-line-strong px-3 text-sm font-medium sm:min-h-10"
+        className="min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg"
       >
         {t.staff.go}
       </button>
@@ -66,7 +66,7 @@ export default async function StaffOrders({
           subtitle={formatDate(menuDate, lang)}
           action={dateForm}
         />
-        <Empty>{t.staff.noMenuThatDay}</Empty>
+        <Empty mood="sleepy">{t.staff.noMenuThatDay}</Empty>
       </>
     );
   }
@@ -126,25 +126,46 @@ export default async function StaffOrders({
     <>
       <PageHeader
         title={t.staff.ordersTitle}
-        subtitle={
-          <>
-            {formatDate(menuDate, lang)} ·{" "}
-            {closed ? t.staff.final : fill(t.staff.stillOpen, { time: cutoff }, lang)}
-          </>
-        }
+        subtitle={formatDate(menuDate, lang)}
         action={dateForm}
       />
 
-      {!closed && (
-        <Card className="mb-5 border-warn/40 bg-warn-soft">
-          <p className="text-sm">{fill(t.staff.stillOpenNote, { time: cutoff }, lang)}</p>
-        </Card>
-      )}
+      {/* The number the kitchen needs, as the hero. While ordering is still
+          open it's provisional, and the status line says so. */}
+      <section className="mb-7 rounded-card bg-surface p-6 shadow-[var(--shadow-card)]">
+        <p className="flex items-center gap-1.5 text-sm font-light italic text-muted">
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 rounded-full ${closed ? "bg-good" : "bg-warn"}`}
+          />
+          {closed ? t.staff.final : fill(t.staff.stillOpen, { time: cutoff }, lang)}
+        </p>
+        <p className="metric mt-3 text-[4.5rem]">
+          {formatNumber(headcount, lang)}
+          <span className="unit">{t.staff.mealsUnit}</span>
+        </p>
+        {!closed && (
+          <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-muted">
+            {fill(t.staff.stillOpenNote, { time: cutoff }, lang)}
+          </p>
+        )}
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
+          {[
+            { label: t.nav.orders, value: orders.length },
+            { label: t.guests.title, value: guestTotal },
+            { label: t.staff.noPick, value: missing.length },
+          ].map((figure) => (
+            <div key={figure.label} className="rounded-inner bg-raised px-3.5 py-3">
+              <p className="truncate text-xs text-muted">{figure.label}</p>
+              <p className="mt-1 text-[1.6rem] font-light leading-none tracking-[-0.02em] tabular-nums">
+                {formatNumber(figure.value, lang)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <Section
-        title={t.staff.counts}
-        aside={<Badge tone="brand">{formatNumber(headcount, lang)}</Badge>}
-      >
+      <Section title={t.staff.counts}>
         {tally.length === 0 ? (
           <Empty>{t.staff.nobodyYet}</Empty>
         ) : (
@@ -159,7 +180,7 @@ export default async function StaffOrders({
                     </p>
                   )}
                 </div>
-                <span className="text-xl font-semibold tabular-nums">
+                <span className="text-[1.75rem] font-light leading-none tracking-[-0.02em] tabular-nums">
                   {formatNumber(count.total, lang)}
                 </span>
               </Row>
@@ -238,7 +259,7 @@ export default async function StaffOrders({
                 <span className="truncate text-sm font-medium">{shownName(employee)}</span>
                 <a
                   href={`tel:${employee.phone}`}
-                  className="text-sm font-medium text-brand underline underline-offset-2"
+                  className="text-sm font-medium text-brand-ink underline underline-offset-2"
                 >
                   {employee.phone}
                 </a>

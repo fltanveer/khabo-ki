@@ -57,7 +57,7 @@ export function ResetRequests({ requests }: { requests: PasswordReset[] }) {
                   // number, so don't post it anywhere public.
                   <p className="mt-2 text-sm">
                     <span className="text-muted">{t.admin.resetCode} </span>
-                    <span className="font-mono text-base font-semibold tracking-[0.25em] text-brand">
+                    <span className="font-mono text-base font-semibold tracking-[0.25em] text-brand-ink">
                       {request.code}
                     </span>
                   </p>

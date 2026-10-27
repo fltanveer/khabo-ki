@@ -30,8 +30,10 @@ export default async function AdminPeople() {
   return (
     <>
       <PageHeader title={t.admin.peopleTitle} subtitle={t.admin.peopleSubtitle} />
-      <ResetRequests requests={resets ?? []} />
-      <PeopleManager people={people ?? []} selfId={admin.id} />
+      {/* Reset requests sit under the people hero: urgent, but secondary to it. */}
+      <PeopleManager people={people ?? []} selfId={admin.id}>
+        <ResetRequests requests={resets ?? []} />
+      </PeopleManager>
     </>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { signOut } from "@/app/actions";
 import type { Profile, Role } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
-import { LangToggle, ThemeToggle } from "./Toggles";
+import { SideMenu, initials } from "./SideMenu";
+import { Logo } from "./Tiffin";
 
 type Icon =
   | "today"
@@ -19,7 +20,7 @@ type Icon =
   | "events"
   | "money";
 
-function NavIcon({ name }: { name: Icon }) {
+function NavIcon({ name, active = false }: { name: Icon; active?: boolean }) {
   // One family: every glyph is drawn on the same 24 grid at the same stroke
   // weight, and no two share a silhouette. "Today" and "Preferences" used to
   // be three horizontal lines each, which made them impossible to tell apart
@@ -49,7 +50,7 @@ function NavIcon({ name }: { name: Icon }) {
       className="h-[22px] w-[22px]"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth={active ? 2.1 : 1.7}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -68,7 +69,6 @@ function useNav(role: Role): NavItem[] {
       { href: "/employee", key: "today", label: t.nav.today },
       { href: "/employee/events", key: "events", label: t.nav.events },
       { href: "/employee/money", key: "money", label: t.nav.money },
-      { href: "/employee/preferences", key: "prefs", label: t.nav.preferences },
     ];
   }
   if (role === "staff") {
@@ -87,6 +87,9 @@ function useNav(role: Role): NavItem[] {
 
 function isActive(pathname: string, href: string, items: NavItem[]): boolean {
   if (pathname === href) return true;
+  // The role's home tab is only "here" when you're on it — Preferences lives
+  // under /employee but belongs to the side menu, not to Today.
+  if (href === items[0]?.href) return false;
   // Only let a parent claim the highlight when no deeper item matches.
   const deeper = items.some((i) => i.href !== href && pathname.startsWith(i.href));
   return !deeper && pathname.startsWith(`${href}/`);
@@ -96,67 +99,75 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const { t } = useI18n();
   const pathname = usePathname();
   const items = useNav(profile.role);
+  const shownName = profile.display_name || profile.name;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5 sm:px-6">
-          <span className="text-base font-semibold tracking-tight sm:text-lg">{t.appName}</span>
+      {/* No fill of its own: at rest the blur only sees the smooth wash, so
+          there is no band; scrolled content blurs out behind the logo. */}
+      <header className="sticky top-0 z-30 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
+          <Logo alt={t.appName} className="h-8 w-auto" />
 
-          {/* Desktop keeps the links inline; mobile gets the tab bar below. */}
-          <nav className="ml-4 hidden flex-1 items-center gap-1 md:flex">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(pathname, item.href, items) ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                  isActive(pathname, item.href, items)
-                    ? "bg-brand-soft text-brand"
-                    : "text-muted hover:bg-raised hover:text-ink"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          {/* Desktop keeps the destinations inline; phones get the capsule. */}
+          <nav className="ml-6 hidden flex-1 items-center gap-1 rounded-full bg-surface/70 p-1 md:flex md:flex-none">
+            {items.map((item) => {
+              const active = isActive(pathname, item.href, items);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                    active ? "bg-ink text-bg" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
-            <LangToggle />
-            <ThemeToggle />
-          </div>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
+            aria-label={`${t.menu.open}: ${shownName}`}
+            className="ml-auto flex h-12 items-center gap-2 rounded-full bg-surface/80 py-1 pl-1 pr-3.5 shadow-[var(--shadow-card)] transition active:scale-95"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-ink text-[0.8rem] font-semibold tracking-wide text-bg">
+              {initials(shownName)}
+            </span>
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5 text-ink"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M5 8h14M5 12h14M5 16h9" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6 sm:py-8">{children}</main>
+      <main className="mx-auto max-w-4xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8">{children}</main>
 
-      <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-sm">
-          <span className="text-muted">
-            {profile.name} · {t.roles[profile.role]}
-          </span>
-          <Link
-            href="/settings"
-            className="text-muted underline-offset-2 hover:text-ink hover:underline"
-          >
-            {t.settings.title}
-          </Link>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-lg px-3 py-2 font-medium text-muted transition hover:bg-raised hover:text-ink"
-            >
-              {t.common.signOut}
-            </button>
-          </form>
-        </div>
-      </div>
+      <SideMenu profile={profile} open={menuOpen} onClose={() => setMenuOpen(false)} />
 
+      {/* A floating capsule instead of a full-width tab bar. Inactive stops are
+          bare icons; the current one opens into a white pill with its label,
+          so the state is a shape and a word, not just a tint. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur-md md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label={t.appName}
+        className="fixed inset-x-0 z-30 flex justify-center px-4 md:hidden"
+        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto flex max-w-md">
+        <div className="flex w-full max-w-[21rem] items-center gap-1 rounded-full bg-ink p-1.5 shadow-float">
           {items.map((item) => {
             const active = isActive(pathname, item.href, items);
             return (
@@ -164,12 +175,13 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition ${
-                  active ? "text-brand" : "text-muted"
+                aria-label={active ? undefined : item.label}
+                className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-full transition-[background-color,flex-grow] duration-200 ${
+                  active ? "flex-[1.6] bg-bg px-4 text-ink" : "flex-1 text-bg/60 hover:text-bg"
                 }`}
               >
-                <NavIcon name={item.key} />
-                {item.label}
+                <NavIcon name={item.key} active={active} />
+                {active && <span className="text-sm font-semibold">{item.label}</span>}
               </Link>
             );
           })}

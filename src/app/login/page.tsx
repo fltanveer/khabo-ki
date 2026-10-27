@@ -43,7 +43,7 @@ export default function LoginPage() {
       footer={
         <>
           {t.auth.newHere}{" "}
-          <Link href="/register" className="font-medium text-brand underline underline-offset-2">
+          <Link href="/register" className="font-medium text-brand-ink underline underline-offset-2">
             {t.auth.register}
           </Link>
         </>

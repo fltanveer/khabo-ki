@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Hind_Siliguri } from "next/font/google";
+import { Hind_Siliguri, Urbanist } from "next/font/google";
 import { getI18n } from "@/lib/i18n/server";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ThemeScript } from "@/components/ThemeScript";
@@ -14,6 +14,15 @@ const bengali = Hind_Siliguri({
   display: "swap",
 });
 
+// Urbanist: geometric, and good at both ends — weight 200 for the big hero
+// numbers, 400–600 for everything people read. Latin-only; Bangla swaps to Hind.
+const text = Urbanist({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600"],
+  variable: "--font-text",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Khabo Ki?",
   description: "Office lunch ordering",
@@ -24,8 +33,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf7" },
-    { media: "(prefers-color-scheme: dark)", color: "#211f1d" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f3f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#151412" },
   ],
 };
 
@@ -33,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { lang, t } = await getI18n();
 
   return (
-    <html lang={lang} className={bengali.variable} suppressHydrationWarning>
+    <html lang={lang} className={`${bengali.variable} ${text.variable}`} suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>

@@ -4,6 +4,26 @@ import { getProfile } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n/server";
 import { formatDateTime } from "@/lib/date";
 
+// A party popper drawn on the same grid and stroke as the tab icons, instead of
+// an emoji that renders differently on every phone.
+function Popper({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 20 8.5 8.5l7 7L4 20Z" />
+      <path d="M13 6.5c.6-1.6 0-3 0-3M17.5 11c1.6-.6 3 0 3 0M15 9l3.5-3.5M19 3.5v.01M21 7v.01M10.5 3v.01" />
+    </svg>
+  );
+}
+
 // There is no push channel here, and there doesn't need to be — everyone opens
 // this screen every morning to order lunch. That makes it the one place an
 // announcement is guaranteed to be seen, which is worth making it loud.
@@ -61,9 +81,9 @@ export async function EventBanner() {
             <div className="flex items-center gap-3.5">
               <span
                 aria-hidden="true"
-                className="announce-emoji grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 text-[1.35rem] leading-none backdrop-blur-sm"
+                className="announce-emoji grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur-sm"
               >
-                🎉
+                <Popper className="h-6 w-6" />
               </span>
 
               <div className="min-w-0 flex-1">
@@ -89,13 +109,13 @@ export async function EventBanner() {
           >
             <span
               aria-hidden="true"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white"
               style={{
                 backgroundImage:
                   "linear-gradient(135deg, var(--party-1), var(--party-3))",
               }}
             >
-              🎉
+              <Popper className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{event.title}</p>

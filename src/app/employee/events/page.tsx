@@ -80,7 +80,7 @@ export default async function EventsPage() {
 
       <Section title={t.events.upcoming}>
         {upcoming.length === 0 ? (
-          <Empty>{t.events.none}</Empty>
+          <Empty mood="party">{t.events.none}</Empty>
         ) : (
           <List>{upcoming.map(eventRow)}</List>
         )}

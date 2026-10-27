@@ -6,7 +6,8 @@ import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
 import { formatMoney } from "@/lib/money";
 import { formatDateTime } from "@/lib/date";
-import { Badge, Button, Card, Empty, Input, List, Notice, Row, Section } from "@/components/ui";
+import { Badge, Button, Empty, Input, List, Notice, Row, Section } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 
 export type SettlementRow = {
   employeeId: string;
@@ -45,6 +46,7 @@ export function Settlement({
   const [recording, setRecording] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState(String(mealPrice));
+  const [editingPrice, setEditingPrice] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function run(call: () => Promise<{ error?: Parameters<typeof errorText>[0] }>, done?: () => void) {
@@ -58,50 +60,74 @@ export function Settlement({
   }
 
   const outstanding = Math.max(totals.billed - totals.paid, 0);
+  const recordingRow = rows.find((r) => r.employeeId === recording) ?? null;
+  const recordingDue = recordingRow ? Math.max(recordingRow.billed - recordingRow.paid, 0) : 0;
 
   return (
     <div>
       <div className="mb-4 space-y-2">
-        <Notice>{error}</Notice>
+        {!recording && !editingPrice && <Notice>{error}</Notice>}
         <Notice tone="good">{message}</Notice>
       </div>
 
-      <Card className="mb-6">
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <p className="text-xs text-muted">{t.money.billed}</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">
-              {formatMoney(totals.billed, lang)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted">{t.money.paid}</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-good">
-              {formatMoney(totals.paid, lang)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted">{t.money.outstanding}</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-bad">
-              {formatMoney(outstanding, lang)}
-            </p>
-          </div>
+      {/* What the office still owes this month is the number an admin acts
+          on; billed and paid are the working underneath it. */}
+      <section className="mb-7 rounded-card bg-surface p-6 shadow-[var(--shadow-card)]">
+        <p className="flex items-center gap-1.5 text-sm font-light italic text-muted">
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 rounded-full ${outstanding > 0 ? "bg-bad" : "bg-good"}`}
+          />
+          {outstanding > 0 ? t.money.outstanding : t.money.settled}
+        </p>
+        <p className={`metric mt-3 text-[4.5rem] ${outstanding > 0 ? "text-ink" : "text-muted"}`}>
+          <span className="sup">৳</span>
+          {n(outstanding)}
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          {[
+            { label: t.money.billed, value: totals.billed },
+            { label: t.money.paid, value: totals.paid },
+          ].map((figure) => (
+            <div key={figure.label} className="rounded-inner bg-raised px-4 py-3">
+              <p className="text-xs text-muted">{figure.label}</p>
+              <p className="mt-1 text-[1.6rem] font-light leading-none tracking-[-0.02em] tabular-nums">
+                {formatMoney(figure.value, lang)}
+              </p>
+            </div>
+          ))}
         </div>
         {totals.claimed > 0 && (
-          <p className="mt-3 border-t border-line pt-3 text-center text-xs text-muted">
+          <p className="mt-4 text-sm text-muted">
             {f(t.settlement.awaitingTotal, { amount: formatMoney(totals.claimed, lang) })}
           </p>
         )}
-      </Card>
+
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
+          <div>
+            <p className="text-xs text-muted">{t.settlement.price}</p>
+            <p className="mt-0.5 text-xl font-medium tabular-nums">{formatMoney(mealPrice, lang)}</p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setPrice(String(mealPrice));
+              setEditingPrice(true);
+            }}
+          >
+            {t.common.change}
+          </Button>
+        </div>
+      </section>
 
       <Section title={t.settlement.perPerson} description={t.settlement.perPersonBody}>
         {rows.length === 0 ? (
-          <Empty>{t.settlement.nobody}</Empty>
+          <Empty mood="happy">{t.settlement.nobody}</Empty>
         ) : (
           <List>
             {rows.map((row) => {
               const due = Math.max(row.billed - row.paid, 0);
-              const isOpen = recording === row.employeeId;
 
               return (
                 <Row
@@ -146,60 +172,20 @@ export function Settlement({
                     )}
                   </div>
 
-                  {isOpen ? (
-                    <div className="flex gap-2 sm:shrink-0">
-                      <Input
-                        inputMode="numeric"
-                        value={amount}
-                        placeholder={String(due)}
-                        onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
-                        className="max-w-[7rem]"
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={pending}
-                        onClick={() => setRecording(null)}
-                      >
-                        {t.common.cancel}
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={pending}
-                        onClick={() =>
-                          run(
-                            () =>
-                              recordCashReceived(
-                                row.employeeId,
-                                month,
-                                Number(amount || due),
-                              ),
-                            () => {
-                              setRecording(null);
-                              setAmount("");
-                              setMessage(f(t.settlement.recorded, { name: row.name }));
-                            },
-                          )
-                        }
-                      >
-                        {t.settlement.received}
-                      </Button>
-                    </div>
-                  ) : (
-                    due > 0 && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="sm:shrink-0"
-                        disabled={pending}
-                        onClick={() => {
-                          setRecording(row.employeeId);
-                          setAmount("");
-                        }}
-                      >
-                        {t.settlement.recordCash}
-                      </Button>
-                    )
+                  {due > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="sm:shrink-0"
+                      disabled={pending}
+                      onClick={() => {
+                        setError("");
+                        setRecording(row.employeeId);
+                        setAmount("");
+                      }}
+                    >
+                      {t.settlement.recordCash}
+                    </Button>
                   )}
                 </Row>
               );
@@ -208,31 +194,99 @@ export function Settlement({
         )}
       </Section>
 
-      <Section title={t.settlement.priceTitle} description={t.settlement.priceBody}>
-        <Card>
-          <div className="flex flex-wrap items-end gap-3">
-            <Input
-              label={t.settlement.price}
-              inputMode="numeric"
-              value={price}
-              onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
-              className="max-w-[8rem]"
-            />
+      <Sheet
+        open={recordingRow !== null}
+        onClose={() => {
+          setError("");
+          setRecording(null);
+        }}
+        title={t.settlement.recordCash}
+        description={recordingRow ? `${recordingRow.name} · ${formatMoney(recordingDue, lang)}` : undefined}
+        footer={
+          <>
             <Button
               variant="secondary"
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => setRecording(null)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={pending || !recordingRow}
+              onClick={() => {
+                if (!recordingRow) return;
+                const row = recordingRow;
+                run(
+                  () => recordCashReceived(row.employeeId, month, Number(amount || recordingDue)),
+                  () => {
+                    setRecording(null);
+                    setAmount("");
+                    setMessage(f(t.settlement.recorded, { name: row.name }));
+                  },
+                );
+              }}
+            >
+              {t.settlement.received}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          label={t.money.amount}
+          inputMode="numeric"
+          value={amount}
+          placeholder={String(recordingDue)}
+          onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+        />
+        {recording && <Notice>{error}</Notice>}
+      </Sheet>
+
+      <Sheet
+        open={editingPrice}
+        onClose={() => {
+          setError("");
+          setEditingPrice(false);
+        }}
+        title={t.settlement.priceTitle}
+        description={t.settlement.priceBody}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              className="shrink-0 px-6"
+              disabled={pending}
+              onClick={() => setEditingPrice(false)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              className="flex-1"
               disabled={pending || price === String(mealPrice) || price === ""}
               onClick={() =>
                 run(
                   () => setMealPrice(Number(price)),
-                  () => setMessage(t.settlement.priceSaved),
+                  () => {
+                    setEditingPrice(false);
+                    setMessage(t.settlement.priceSaved);
+                  },
                 )
               }
             >
               {t.common.save}
             </Button>
-          </div>
-        </Card>
-      </Section>
+          </>
+        }
+      >
+        <Input
+          label={t.settlement.price}
+          inputMode="numeric"
+          value={price}
+          onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
+        />
+        {editingPrice && <Notice>{error}</Notice>}
+      </Sheet>
     </div>
   );
 }

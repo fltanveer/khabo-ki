@@ -11,6 +11,7 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
   --color-on-brand: var(--on-brand);
   --color-brand-soft: var(--brand-soft);
   --color-good: var(--good);
@@ -21,42 +22,56 @@
   --color-bad-soft: var(--bad-soft);
 
   --font-sans: var(--font-app);
-  --radius-card: 1rem;
+  --font-display: var(--font-display-app);
+  --color-faint: var(--faint);
+  --radius-card: 1.75rem;
+  --radius-inner: 1.125rem;
+  --radius-sheet: 1.75rem;
+  --shadow-float: var(--shadow-float-app);
 }
 
-/* A near-neutral palette with a faint cool cast. Every pairing below is
-   checked against WCAG: body and secondary text clear 4.5:1, interactive
-   borders clear 3:1. Dark mode avoids pure black (#000 smears on OLED and
-   raises halation) and pure white text, which is what makes a dark UI glare. */
+/* Porcelain neutrals with one accent. Turmeric — holud, the colour of every
+   Dhaka lunch tiffin — is rationed to the one action that matters on a screen,
+   the countdown and the ambient glow. Selection and navigation are black on
+   light and white on dark, never the brand colour. Yellow can't carry text, so
+   anything that needs to *read* as brand uses --brand-ink, a deep amber.
+   Every pairing is checked against WCAG: body and secondary text clear 4.5:1,
+   interactive borders clear 3:1. */
 :root {
-  --bg: oklch(0.983 0.0015 250);
+  --bg: oklch(0.962 0.003 85);
   --surface: oklch(1 0 0);
-  --raised: oklch(0.963 0.003 250);
-  --line: oklch(0.885 0.005 250);
-  --line-strong: oklch(0.655 0.013 255);
-  --ink: oklch(0.245 0.012 255);
-  --muted: oklch(0.505 0.012 255);
-  --brand: oklch(0.52 0.16 264);
-  --on-brand: oklch(1 0 0);
-  --brand-soft: oklch(0.955 0.02 264);
-  --good: oklch(0.5 0.12 158);
-  --good-soft: oklch(0.955 0.03 158);
-  --warn: oklch(0.52 0.11 70);
-  --warn-soft: oklch(0.96 0.04 80);
-  --bad: oklch(0.52 0.18 22);
-  --bad-soft: oklch(0.958 0.025 22);
-
+  --raised: oklch(0.945 0.004 85);
+  --line: oklch(0.905 0.004 85);
+  --line-strong: oklch(0.66 0.006 85);
+  --ink: oklch(0.2 0.006 70);
+  --muted: oklch(0.5 0.006 70);
+  --faint: oklch(0.7 0.005 70);
+  --brand: oklch(0.815 0.158 79);
+  --brand-ink: oklch(0.5 0.115 62);
+  --on-brand: oklch(0.235 0.04 55);
+  --brand-soft: oklch(0.948 0.052 88);
+  --good: oklch(0.48 0.11 150);
+  --good-soft: oklch(0.95 0.035 150);
+  --warn: oklch(0.5 0.11 55);
+  --warn-soft: oklch(0.955 0.04 70);
+  --bad: oklch(0.51 0.18 27);
+  --bad-soft: oklch(0.955 0.028 27);
 
   /* A party is the one thing in this app that should shout. The ramp is
      deliberately deep rather than neon: white sits at 6.1:1 or better on
      every stop, and the softer secondary line still clears 5:1. */
-  --party-1: oklch(0.515 0.175 30);
-  --party-2: oklch(0.495 0.2 352);
-  --party-3: oklch(0.485 0.19 292);
-  --party-glow: oklch(0.495 0.2 352 / 0.3);
+  --party-1: oklch(0.52 0.17 38);
+  --party-2: oklch(0.48 0.185 18);
+  --party-3: oklch(0.42 0.16 355);
+  --party-glow: oklch(0.48 0.185 18 / 0.3);
 
-  --shadow-card: 0 1px 2px oklch(0.2 0.02 255 / 0.05);
-  --font-app: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.9) inset, 0 12px 32px -18px oklch(0.3 0.02 70 / 0.18);
+  --orb: oklch(0.87 0.13 84 / 0.6);
+  /* Only things that float over content get depth: the pick bar and the tab
+     bar. Two layers, tinted toward the canvas so it reads warm, not grey. */
+  --shadow-float-app: 0 1px 2px oklch(0.35 0.05 60 / 0.08), 0 14px 32px -12px oklch(0.4 0.08 65 / 0.28);
+  --font-app: var(--font-text), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display-app: var(--font-app);
   color-scheme: light;
 }
 
@@ -65,6 +80,9 @@
 :root[lang="bn"] {
   --font-app: var(--font-bengali), "Noto Sans Bengali", "Kalpurush", "SolaimanLipi",
     ui-sans-serif, system-ui, sans-serif;
+  /* The rounded display face has no Bengali glyphs, and a title half in one
+     face and half in the fallback looks broken, so Bangla titles use Hind. */
+  --font-display-app: var(--font-app);
 }
 
 /* Bengali ascenders and the matra sit outside the Latin line box, so tight
@@ -88,29 +106,33 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: oklch(0.175 0.006 260);
-  --surface: oklch(0.212 0.007 260);
-  --raised: oklch(0.252 0.008 262);
-  --line: oklch(0.345 0.01 262);
-  --line-strong: oklch(0.52 0.014 262);
-  --ink: oklch(0.945 0.003 260);
-  --muted: oklch(0.715 0.01 260);
-  --brand: oklch(0.74 0.13 264);
-  --on-brand: oklch(0.19 0.03 264);
-  --brand-soft: oklch(0.3 0.055 264);
-  --good: oklch(0.78 0.13 160);
-  --good-soft: oklch(0.285 0.038 160);
-  --warn: oklch(0.85 0.1 88);
-  --warn-soft: oklch(0.285 0.032 88);
-  --bad: oklch(0.72 0.15 22);
-  --bad-soft: oklch(0.29 0.045 22);
+  --bg: oklch(0.165 0.004 70);
+  --surface: oklch(0.215 0.005 70);
+  --raised: oklch(0.255 0.006 70);
+  --line: oklch(1 0 0 / 0.08);
+  --line-strong: oklch(0.52 0.008 70);
+  --ink: oklch(0.96 0.004 85);
+  --muted: oklch(0.72 0.006 80);
+  --faint: oklch(0.56 0.006 80);
+  --brand: oklch(0.83 0.15 80);
+  --brand-ink: oklch(0.85 0.13 82);
+  --on-brand: oklch(0.22 0.04 58);
+  --brand-soft: oklch(0.3 0.058 74);
+  --good: oklch(0.78 0.13 152);
+  --good-soft: oklch(0.285 0.04 152);
+  --warn: oklch(0.84 0.11 75);
+  --warn-soft: oklch(0.29 0.04 70);
+  --bad: oklch(0.73 0.15 27);
+  --bad-soft: oklch(0.29 0.05 27);
 
-  --party-1: oklch(0.475 0.155 30);
-  --party-2: oklch(0.455 0.175 352);
-  --party-3: oklch(0.445 0.17 292);
-  --party-glow: oklch(0.455 0.175 352 / 0.42);
+  --party-1: oklch(0.48 0.155 38);
+  --party-2: oklch(0.445 0.165 18);
+  --party-3: oklch(0.39 0.14 355);
+  --party-glow: oklch(0.445 0.165 18 / 0.42);
 
-  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.05) inset;
+  --orb: oklch(0.62 0.12 78 / 0.22);
+  --shadow-float-app: 0 1px 2px oklch(0 0 0 / 0.35), 0 16px 36px -14px oklch(0 0 0 / 0.6);
   color-scheme: dark;
 }
 
@@ -122,12 +144,184 @@ html {
   background: var(--bg);
 }
 
+/* html carries the canvas colour; body stays clear so the orb behind it shows. */
 body {
-  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-app);
-  /* Room for the mobile tab bar plus the home indicator. */
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  /* Room for the floating nav capsule plus the home indicator. */
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+/* Atmosphere: a turmeric wash across the top of the screen, so the porcelain
+   reads as a surface rather than flat app-grey. Built from eased gradient
+   stops instead of a blurred blob, which bands into visible rings. It sits
+   behind content and never takes pointer events. */
+body::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0 0 auto 0;
+  height: min(44rem, 85vh);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      140% 100% at 75% 0%,
+      oklch(from var(--orb) l c h / calc(alpha * 1)) 0%,
+      oklch(from var(--orb) l c h / calc(alpha * 0.82)) 18%,
+      oklch(from var(--orb) l c h / calc(alpha * 0.58)) 36%,
+      oklch(from var(--orb) l c h / calc(alpha * 0.34)) 54%,
+      oklch(from var(--orb) l c h / calc(alpha * 0.15)) 72%,
+      oklch(from var(--orb) l c h / calc(alpha * 0.04)) 88%,
+      oklch(from var(--orb) l c h / 0) 100%
+    );
+}
+
+/* The hero number: thin, tight, with a muted unit — the one place type gets
+   big. Never tabular; it is read once, not compared. */
+.metric {
+  font-weight: 200;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+
+.metric .unit {
+  font-size: 0.36em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin-left: 0.12em;
+}
+
+.metric .sup {
+  font-size: 0.4em;
+  font-weight: 300;
+  letter-spacing: 0;
+  color: var(--muted);
+  vertical-align: top;
+  position: relative;
+  top: 0.14em;
+  margin-right: 0.06em;
+}
+
+/* Side menu: a native <dialog> gives focus trapping, Escape and an inert page
+   for free. It slides in from the right edge where the avatar lives. */
+.side-menu {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(22.5rem, 88vw);
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 0;
+  transform: translateX(100%);
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    overlay 320ms allow-discrete,
+    display 320ms allow-discrete;
+}
+
+.side-menu[open] {
+  transform: translateX(0);
+}
+
+@starting-style {
+  .side-menu[open] {
+    transform: translateX(100%);
+  }
+}
+
+/* Task sheet: rises from the bottom on phones, a centred card from md up.
+   Same <dialog> mechanics as the side menu. */
+.sheet {
+  margin: auto 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 1.75rem 1.75rem 0 0;
+  transform: translateY(100%);
+  transition:
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    overlay 340ms allow-discrete,
+    display 340ms allow-discrete;
+}
+
+.sheet[open] {
+  transform: translateY(0);
+}
+
+.sheet:focus-visible {
+  outline: none;
+}
+
+@starting-style {
+  .sheet[open] {
+    transform: translateY(100%);
+  }
+}
+
+@media (min-width: 768px) {
+  .sheet {
+    margin: auto;
+    width: min(32rem, calc(100% - 3rem));
+    max-height: min(46rem, calc(100dvh - 4rem));
+    border-radius: 1.75rem;
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 200ms ease-out,
+      overlay 260ms allow-discrete,
+      display 260ms allow-discrete;
+  }
+
+  .sheet[open] {
+    opacity: 1;
+    transform: none;
+  }
+
+  @starting-style {
+    .sheet[open] {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.98);
+    }
+  }
+}
+
+/* The page behind an open overlay shouldn't scroll under the finger. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+.sheet::backdrop,
+.side-menu::backdrop {
+  background: oklch(0.15 0.01 70 / 0);
+  backdrop-filter: blur(0);
+  transition:
+    background 320ms ease-out,
+    backdrop-filter 320ms ease-out,
+    overlay 320ms allow-discrete,
+    display 320ms allow-discrete;
+}
+
+.sheet[open]::backdrop,
+.side-menu[open]::backdrop {
+  background: oklch(0.15 0.01 70 / 0.42);
+  backdrop-filter: blur(4px);
+}
+
+@starting-style {
+  .sheet[open]::backdrop,
+  .side-menu[open]::backdrop {
+    background: oklch(0.15 0.01 70 / 0);
+    backdrop-filter: blur(0);
+  }
 }
 
 @media (min-width: 768px) {
@@ -154,7 +348,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--brand-ink);
   outline-offset: 2px;
 }
 
@@ -230,4 +424,18 @@ button {
   .announce-emoji {
     animation: none;
   }
+}
+
+/* The wordmark is artwork with baked-in lettering, so each theme has its own
+   file and only the matching one is displayed. */
+.logo-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .logo-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .logo-dark {
+  display: block;
 }

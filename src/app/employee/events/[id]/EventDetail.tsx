@@ -25,6 +25,7 @@ import {
   Section,
   Select,
 } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 import type { PaymentDetails } from "@/lib/types";
 
 type Participant = {
@@ -208,72 +209,74 @@ export function EventDetail({
 
               {mine?.rsvp === "in" && live && (
                 <div className="mt-4">
-                  {editingAmount ? (
-                    <div className="space-y-3">
-                      <Input
-                        label={t.events.customAmount}
-                        hint={t.events.customHint}
-                        inputMode="numeric"
-                        value={amountDraft}
-                        onChange={(e) => setAmountDraft(e.target.value.replace(/[^\d]/g, ""))}
-                      />
-                      <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => {
+                        setAmountDraft(String(mine.custom ?? myShare));
+                        setEditingAmount(true);
+                      }}
+                    >
+                      {t.events.changeAmount}
+                    </Button>
+                    {mine.custom !== null && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={pending}
+                        onClick={() =>
+                          run(
+                            (cur) => cur.map((p) => (p.id === me ? { ...p, custom: null } : p)),
+                            () => setCustomAmount(event.id, null),
+                          )
+                        }
+                      >
+                        {t.events.backToEven}
+                      </Button>
+                    )}
+                  </div>
+
+                  <Sheet
+                    open={editingAmount}
+                    onClose={() => setEditingAmount(false)}
+                    title={t.events.changeAmount}
+                    description={t.events.customHint}
+                    footer={
+                      <>
                         <Button
                           variant="secondary"
-                          className="flex-1 sm:flex-none"
+                          className="shrink-0 px-6"
                           disabled={pending}
                           onClick={() => setEditingAmount(false)}
                         >
                           {t.common.cancel}
                         </Button>
                         <Button
-                          className="flex-1 sm:flex-none"
+                          className="flex-1"
                           disabled={pending || amountDraft === ""}
                           onClick={() => {
                             const value = Number(amountDraft);
                             setEditingAmount(false);
                             run(
-                              (cur) =>
-                                cur.map((p) => (p.id === me ? { ...p, custom: value } : p)),
+                              (cur) => cur.map((p) => (p.id === me ? { ...p, custom: value } : p)),
                               () => setCustomAmount(event.id, value),
                             );
                           }}
                         >
                           {t.events.saveAmount}
                         </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={pending}
-                        onClick={() => {
-                          setAmountDraft(String(mine.custom ?? myShare));
-                          setEditingAmount(true);
-                        }}
-                      >
-                        {t.events.changeAmount}
-                      </Button>
-                      {mine.custom !== null && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={pending}
-                          onClick={() =>
-                            run(
-                              (cur) =>
-                                cur.map((p) => (p.id === me ? { ...p, custom: null } : p)),
-                              () => setCustomAmount(event.id, null),
-                            )
-                          }
-                        >
-                          {t.events.backToEven}
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                      </>
+                    }
+                  >
+                    <Input
+                      label={t.events.customAmount}
+                      inputMode="numeric"
+                      value={amountDraft}
+                      onChange={(e) => setAmountDraft(e.target.value.replace(/[^\d]/g, ""))}
+                    />
+                  </Sheet>
                 </div>
               )}
             </Card>
@@ -286,64 +289,65 @@ export function EventDetail({
               <div className="mt-3">
                 {myOutstanding === 0 && myPendingClaim === 0 ? (
                   <Notice tone="good">{t.money.settled}</Notice>
-                ) : paying ? (
-                  <Card>
-                    <div className="space-y-3">
-                      <Input
-                        label={t.money.amount}
-                        inputMode="numeric"
-                        value={payAmount}
-                        placeholder={String(myOutstanding)}
-                        onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ""))}
-                      />
-                      <Select
-                        label={t.money.method}
-                        value={payMethod}
-                        onChange={(e) => setPayMethod(e.target.value as "cash" | "qr")}
-                      >
-                        <option value="qr">{t.money.qr}</option>
-                        <option value="cash">{t.money.cash}</option>
-                      </Select>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="secondary"
-                          className="flex-1 sm:flex-none"
-                          disabled={pending}
-                          onClick={() => setPaying(false)}
-                        >
-                          {t.common.cancel}
-                        </Button>
-                        <Button
-                          className="flex-1 sm:flex-none"
-                          disabled={pending}
-                          onClick={() => {
-                            const value = Number(payAmount || myOutstanding);
-                            setError("");
-                            startTransition(async () => {
-                              const result = await payEventShare(
-                                event.id,
-                                value,
-                                payMethod,
-                                "",
-                              );
-                              if (result.error) setError(errorText(result.error));
-                              else {
-                                setPaying(false);
-                                setPayAmount("");
-                              }
-                            });
-                          }}
-                        >
-                          {t.money.submit}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
                 ) : (
                   <Button block variant="secondary" onClick={() => setPaying(true)}>
                     {t.events.markPaid}
                   </Button>
                 )}
+
+                <Sheet
+                  open={paying}
+                  onClose={() => setPaying(false)}
+                  title={t.events.markPaid}
+                  description={f(t.events.payVia, { name: collector.name })}
+                  footer={
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="shrink-0 px-6"
+                        disabled={pending}
+                        onClick={() => setPaying(false)}
+                      >
+                        {t.common.cancel}
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        disabled={pending}
+                        onClick={() => {
+                          const value = Number(payAmount || myOutstanding);
+                          setError("");
+                          startTransition(async () => {
+                            const result = await payEventShare(event.id, value, payMethod, "");
+                            if (result.error) setError(errorText(result.error));
+                            else {
+                              setPaying(false);
+                              setPayAmount("");
+                            }
+                          });
+                        }}
+                      >
+                        {t.money.submit}
+                      </Button>
+                    </>
+                  }
+                >
+                  <Input
+                    label={t.money.amount}
+                    inputMode="numeric"
+                    value={payAmount}
+                    placeholder={String(myOutstanding)}
+                    onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ""))}
+                  />
+                  <Select
+                    label={t.money.method}
+                    value={payMethod}
+                    onChange={(e) => setPayMethod(e.target.value as "cash" | "qr")}
+                  >
+                    <option value="qr">{t.money.qr}</option>
+                    <option value="cash">{t.money.cash}</option>
+                  </Select>
+                  {paying && <Notice>{error}</Notice>}
+                </Sheet>
 
                 {myPendingClaim > 0 && (
                   <p className="mt-2 text-xs text-muted">
@@ -401,7 +405,7 @@ export function EventDetail({
         aside={<Badge tone="brand">{f(t.events.inCount, { count: goingCount })}</Badge>}
       >
         {going.length === 0 ? (
-          <Empty>{t.events.nobodyIn}</Empty>
+          <Empty mood="party">{t.events.nobodyIn}</Empty>
         ) : (
           <List>
             {going.map((person) => {
@@ -416,7 +420,7 @@ export function EventDetail({
                       {person.id === me && <span className="text-muted"> ({t.admin.you})</span>}
                     </p>
                     {shared && person.custom !== null && (
-                      <p className="mt-0.5 text-xs text-brand">{t.events.chosenAmount}</p>
+                      <p className="mt-0.5 text-xs text-brand-ink">{t.events.chosenAmount}</p>
                     )}
                   </div>
                   {shared && (

@@ -42,7 +42,7 @@ export default function RegisterPage() {
           <p className="text-sm leading-relaxed text-muted">{t.auth.registrationBody}</p>
           <Link
             href="/login"
-            className="mt-4 inline-block text-sm font-medium text-brand underline underline-offset-2"
+            className="mt-4 inline-block text-sm font-medium text-brand-ink underline underline-offset-2"
           >
             {t.auth.backToSignIn}
           </Link>
@@ -58,7 +58,7 @@ export default function RegisterPage() {
       footer={
         <>
           {t.auth.alreadyRegistered}{" "}
-          <Link href="/login" className="font-medium text-brand underline underline-offset-2">
+          <Link href="/login" className="font-medium text-brand-ink underline underline-offset-2">
             {t.common.signIn}
           </Link>
         </>

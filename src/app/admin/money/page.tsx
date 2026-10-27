@@ -82,13 +82,13 @@ export default async function AdminMoney({
     <div className="flex items-center gap-1">
       <Link
         href={`/admin/money?month=${shiftMonth(month, -1)}`}
-        className="rounded-lg border border-line-strong px-2.5 py-1.5 text-sm text-muted hover:bg-raised hover:text-ink"
+        className="grid h-11 w-11 place-items-center rounded-full bg-surface text-lg text-ink shadow-[var(--shadow-card)] hover:bg-raised"
       >
         ‹
       </Link>
       <Link
         href={`/admin/money?month=${shiftMonth(month, 1)}`}
-        className="rounded-lg border border-line-strong px-2.5 py-1.5 text-sm text-muted hover:bg-raised hover:text-ink"
+        className="grid h-11 w-11 place-items-center rounded-full bg-surface text-lg text-ink shadow-[var(--shadow-card)] hover:bg-raised"
       >
         ›
       </Link>

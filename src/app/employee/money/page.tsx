@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getI18n } from "@/lib/i18n/server";
-import { fill, itemName } from "@/lib/i18n";
+import { fill, formatNumber, itemName } from "@/lib/i18n";
 import { formatDate } from "@/lib/date";
 import { formatMoney, monthKey, monthLabel, shiftMonth } from "@/lib/money";
 import { Badge, Card, Empty, List, PageHeader, Row, Section } from "@/components/ui";
@@ -127,13 +127,13 @@ export default async function MoneyPage({
     <div className="flex items-center gap-1">
       <Link
         href={`/employee/money?month=${shiftMonth(month, -1)}`}
-        className="rounded-lg border border-line-strong px-2.5 py-1.5 text-sm text-muted hover:bg-raised hover:text-ink"
+        className="grid h-11 w-11 place-items-center rounded-full bg-surface text-lg text-ink shadow-[var(--shadow-card)] hover:bg-raised"
       >
         ‹
       </Link>
       <Link
         href={`/employee/money?month=${shiftMonth(month, 1)}`}
-        className="rounded-lg border border-line-strong px-2.5 py-1.5 text-sm text-muted hover:bg-raised hover:text-ink"
+        className="grid h-11 w-11 place-items-center rounded-full bg-surface text-lg text-ink shadow-[var(--shadow-card)] hover:bg-raised"
       >
         ›
       </Link>
@@ -144,13 +144,27 @@ export default async function MoneyPage({
     <>
       <PageHeader title={t.money.title} subtitle={monthLabel(month, lang)} action={monthNav} />
 
+      {/* One number matters on this screen: what you still owe. It gets the
+          thin hero treatment; everything else is the working underneath. */}
       <Card className="mb-5">
-        <div className="grid grid-cols-2 gap-4">
+        <p className="flex items-center gap-1.5 text-sm font-light italic text-muted">
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 rounded-full ${outstanding > 0 ? "bg-bad" : "bg-good"}`}
+          />
+          {outstanding > 0 ? t.money.outstanding : t.money.settled}
+        </p>
+        <p className={`metric mt-3 text-[4.5rem] ${outstanding > 0 ? "text-ink" : "text-muted"}`}>
+          <span className="sup">৳</span>
+          {formatNumber(outstanding, lang)}
+        </p>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <Figure label={t.money.ownMeals} value={String(bill?.own_meals ?? 0)} lang={lang} />
           <Figure label={t.money.guestMeals} value={String(bill?.guest_meals ?? 0)} lang={lang} />
         </div>
 
-        <div className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+        <div className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
           <LineItem label={t.money.billed} value={formatMoney(billed, lang)} />
           <LineItem label={t.money.paid} value={formatMoney(paid, lang)} muted />
           {pendingClaims > 0 && (
@@ -160,16 +174,6 @@ export default async function MoneyPage({
               muted
             />
           )}
-          <div className="flex items-center justify-between border-t border-line pt-2">
-            <span className="font-medium">{t.money.outstanding}</span>
-            <span
-              className={`text-lg font-semibold tabular-nums ${
-                outstanding > 0 ? "text-bad" : "text-good"
-              }`}
-            >
-              {outstanding > 0 ? formatMoney(outstanding, lang) : t.money.settled}
-            </span>
-          </div>
         </div>
       </Card>
 
@@ -231,9 +235,9 @@ export default async function MoneyPage({
 
 function Figure({ label, value, lang }: { label: string; value: string; lang: "en" | "bn" }) {
   return (
-    <div>
+    <div className="rounded-inner bg-raised px-4 py-3.5">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">
+      <p className="mt-1 text-[1.75rem] font-light leading-none tracking-[-0.02em] tabular-nums">
         {new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-GB").format(Number(value))}
       </p>
     </div>

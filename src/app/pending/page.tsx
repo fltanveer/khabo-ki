@@ -18,7 +18,7 @@ export default async function PendingPage() {
         <form action={signOut} className="mt-4">
           <button
             type="submit"
-            className="text-sm font-medium text-brand underline underline-offset-2"
+            className="text-sm font-medium text-brand-ink underline underline-offset-2"
           >
             {t.common.signOut}
           </button>

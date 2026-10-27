@@ -10,8 +10,8 @@ export type PickableItem = { id: string; name: string; name_bn: string | null };
 
 function Check() {
   return (
-    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand text-on-brand">
-      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand text-on-brand">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
         <path d="m5 13 4 4L19 7" />
       </svg>
     </span>
@@ -61,6 +61,8 @@ export function MenuPicker({
 
   const selectedId = draft ? draft.id : confirmedId;
   const dirty = selectedId !== confirmedId;
+  const selectedItem = items.find((i) => i.id === selectedId) ?? null;
+  const showBar = open && (dirty || confirmedId !== null);
 
   function tap(itemId: string) {
     if (!open) return;
@@ -106,15 +108,15 @@ export function MenuPicker({
                 disabled={!open}
                 aria-pressed={selected}
                 onClick={() => tap(item.id)}
-                className={`flex w-full items-center justify-between gap-3 rounded-card border px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-60 ${
+                className={`flex min-h-[4.5rem] w-full items-center justify-between gap-3 rounded-[1.5rem] border-2 py-3.5 pl-5 pr-4 text-left transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.985] disabled:opacity-60 ${
                   selected
                     ? staged
-                      ? "border-brand border-dashed bg-brand-soft"
-                      : "border-brand bg-brand-soft"
-                    : "border-line-strong bg-surface hover:border-brand"
+                      ? "border-dashed border-ink bg-surface"
+                      : "border-ink bg-ink text-bg"
+                    : "border-transparent bg-surface shadow-[var(--shadow-card)] hover:border-line"
                 }`}
               >
-                <span className={`text-[0.95rem] ${selected ? "font-semibold" : "font-medium"}`}>
+                <span className="text-[1.1rem] font-medium leading-snug">
                   {dish(item)}
                 </span>
                 {selected ? (
@@ -127,7 +129,7 @@ export function MenuPicker({
                     <Check />
                   </span>
                 ) : (
-                  <span className="h-6 w-6 shrink-0 rounded-full border-2 border-line-strong" />
+                  <span className="h-8 w-8 shrink-0 rounded-full border-[1.5px] border-line-strong" />
                 )}
               </button>
             </li>
@@ -135,34 +137,55 @@ export function MenuPicker({
         })}
       </ul>
 
-      {open && (dirty || confirmedId) && (
+      {/* Keeps the last dish clear of the floating bar on phones. */}
+      {showBar && <div aria-hidden="true" className="h-28 md:hidden" />}
+
+      {showBar && (
         <div
-          className="fixed inset-x-0 bottom-[4.25rem] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-md md:static md:mt-5 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="fixed inset-x-3 z-20 md:static md:inset-auto md:mt-5"
+          style={{ bottom: "calc(4rem + 1.5rem + env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto flex max-w-4xl items-center gap-3">
+          <div className="mx-auto flex max-w-xl items-center gap-3 rounded-full bg-surface/90 p-2 pl-5 shadow-float backdrop-blur-xl md:max-w-none">
             {dirty ? (
               <>
-                <span className="min-w-0 flex-1 text-sm text-muted">
-                  {suggested && selectedId === currentItemId
-                    ? t.employee.suggestedBody
-                    : t.employee.unconfirmed}
+                <span className="min-w-0 flex-1">
+                  {selectedItem ? (
+                    <>
+                      <span className="block text-xs font-semibold text-muted">
+                        {suggested && selectedId === currentItemId
+                          ? t.employee.suggested
+                          : t.employee.yourLunch}
+                      </span>
+                      <span className="block truncate font-semibold">{dish(selectedItem)}</span>
+                    </>
+                  ) : (
+                    <span className="block text-sm leading-snug text-muted">
+                      {t.employee.unconfirmed}
+                    </span>
+                  )}
                 </span>
                 {suggested && (
                   <Button variant="ghost" size="sm" disabled={pending} onClick={clear}>
                     {t.employee.notToday}
                   </Button>
                 )}
-                <Button disabled={pending} onClick={confirm}>
+                <Button variant="accent" disabled={pending} onClick={confirm}>
                   {pending ? t.employee.confirming : t.employee.confirmOrder}
                 </Button>
               </>
             ) : (
               <>
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <Badge tone="good">{t.employee.orderConfirmed}</Badge>
-                  <span className="text-xs text-muted">
-                    {f(t.employee.changeHint, { time: cutoff })}
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-good-soft text-good">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m5 13 4 4L19 7" />
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">
+                    {selectedItem ? dish(selectedItem) : t.employee.orderConfirmed}
+                  </span>
+                  <span className="block text-xs text-muted">
+                    {t.employee.orderConfirmed} · {f(t.employee.changeHint, { time: cutoff })}
                   </span>
                 </span>
                 <Button variant="secondary" size="sm" disabled={pending} onClick={clear}>

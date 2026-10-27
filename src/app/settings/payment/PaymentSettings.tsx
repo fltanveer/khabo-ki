@@ -103,7 +103,7 @@ export function PaymentSettings({ details }: { details: PaymentDetails | null })
               <img
                 src={qr}
                 alt={t.payment.qr}
-                className="w-full max-w-[220px] rounded-xl border border-line bg-white p-2"
+                className="w-full max-w-[220px] rounded-2xl border border-line bg-white p-2"
               />
             </div>
           )}

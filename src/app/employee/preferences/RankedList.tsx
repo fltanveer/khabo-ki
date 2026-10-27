@@ -92,9 +92,9 @@ export function RankedList({
             <li
               key={item.id}
               data-id={item.id}
-              className={`flex items-center gap-2 rounded-xl border px-2 py-2 transition-[background,box-shadow,border-color] ${
+              className={`flex items-center gap-2 rounded-2xl border px-2 py-2 transition-[background,box-shadow,border-color] ${
                 dragging
-                  ? "border-brand bg-brand-soft shadow-lg"
+                  ? "border-brand-ink bg-brand-soft shadow-lg"
                   : "border-line bg-raised"
               }`}
             >
@@ -113,7 +113,7 @@ export function RankedList({
                     nudge(item.id, 1);
                   }
                 }}
-                className="grid h-10 w-8 shrink-0 cursor-grab touch-none place-items-center rounded-lg text-muted transition hover:bg-surface hover:text-ink active:cursor-grabbing disabled:opacity-40"
+                className="grid h-10 w-8 shrink-0 cursor-grab touch-none place-items-center rounded-full text-muted transition hover:bg-surface hover:text-ink active:cursor-grabbing disabled:opacity-40"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
                   <circle cx="9" cy="6" r="1.6" />
@@ -136,7 +136,7 @@ export function RankedList({
                 aria-label={`${t.common.remove}: ${dish(item)}`}
                 disabled={disabled}
                 onClick={() => onRemove(item.id)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-surface hover:text-bad disabled:opacity-40"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition hover:bg-surface hover:text-bad disabled:opacity-40"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <path d="M6 6l12 12M18 6L6 18" />

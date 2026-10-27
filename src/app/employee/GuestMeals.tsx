@@ -6,6 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { useErrorText } from "@/components/useErrorText";
 import { formatMoney } from "@/lib/money";
 import { Badge, Button, Card, Input, Notice, Select, Section } from "@/components/ui";
+import { Sheet } from "@/components/Sheet";
 import type { PickableItem } from "./MenuPicker";
 
 export type MyGuestMeal = {
@@ -51,6 +52,11 @@ export function GuestMeals({
     });
   }
 
+  function close() {
+    setError("");
+    setAdding(false);
+  }
+
   function remove(id: string) {
     setError("");
     startTransition(async () => {
@@ -73,7 +79,7 @@ export function GuestMeals({
         ) : undefined
       }
     >
-      {error && (
+      {error && !adding && (
         <div className="mb-3">
           <Notice>{error}</Notice>
         </div>
@@ -122,9 +128,28 @@ export function GuestMeals({
         </Card>
       )}
 
-      {!open ? null : adding ? (
-        <Card>
-          <div className="space-y-3">
+      {open && (
+        <Button variant="secondary" block onClick={() => setAdding(true)}>
+          {mine.length > 0 ? t.guests.addAnother : t.guests.add}
+        </Button>
+      )}
+
+      <Sheet
+        open={open && adding}
+        onClose={close}
+        title={mine.length > 0 ? t.guests.addAnother : t.guests.add}
+        description={t.guests.body}
+        footer={
+          <>
+            <Button variant="secondary" className="shrink-0 px-6" disabled={pending} onClick={close}>
+              {t.common.cancel}
+            </Button>
+            <Button className="flex-1" disabled={pending || !itemId} onClick={submit}>
+              {pending ? t.common.saving : t.guests.save}
+            </Button>
+          </>
+        }
+      >
             <Select
               label={t.guests.dish}
               value={itemId}
@@ -136,7 +161,7 @@ export function GuestMeals({
                 </option>
               ))}
             </Select>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Select
                 label={t.guests.howMany}
                 value={quantity}
@@ -156,29 +181,8 @@ export function GuestMeals({
                 onChange={(e) => setLabel(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                className="flex-1 sm:flex-none"
-                disabled={pending}
-                onClick={() => {
-                  setError("");
-                  setAdding(false);
-                }}
-              >
-                {t.common.cancel}
-              </Button>
-              <Button className="flex-1 sm:flex-none" disabled={pending || !itemId} onClick={submit}>
-                {pending ? t.common.saving : t.guests.save}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <Button variant="secondary" block onClick={() => setAdding(true)}>
-          {mine.length > 0 ? t.guests.addAnother : t.guests.add}
-        </Button>
-      )}
+            <Notice>{error}</Notice>
+      </Sheet>
     </Section>
   );
 }

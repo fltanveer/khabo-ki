@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
       title={t.reset.title}
       subtitle={step === "ask" ? t.reset.askSubtitle : t.reset.codeSubtitle}
       footer={
-        <Link href="/login" className="font-medium text-brand underline underline-offset-2">
+        <Link href="/login" className="font-medium text-brand-ink underline underline-offset-2">
           {t.auth.backToSignIn}
         </Link>
       }
